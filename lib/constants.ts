@@ -15,4 +15,5 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
 export const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Products", href: "/products" },
+  { label: "Categories", href: "/categories" },
 ] as const;

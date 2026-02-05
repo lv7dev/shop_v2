@@ -52,3 +52,20 @@ export async function getProductById(id: string) {
     include: { category: true },
   });
 }
+
+export async function getRelatedProducts(
+  productId: string,
+  categoryId: string | null,
+  limit = 4
+) {
+  return db.product.findMany({
+    where: {
+      isActive: true,
+      id: { not: productId },
+      ...(categoryId && { categoryId }),
+    },
+    include: { category: true },
+    take: limit,
+    orderBy: { createdAt: "desc" },
+  });
+}

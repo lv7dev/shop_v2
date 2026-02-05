@@ -12,6 +12,7 @@ export type CartItem = {
 
 type CartStore = {
   items: CartItem[];
+  _hydrated: boolean;
   addItem: (item: Omit<CartItem, "quantity">) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -24,6 +25,7 @@ export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      _hydrated: false,
 
       addItem: (item) =>
         set((state) => {
@@ -59,6 +61,11 @@ export const useCartStore = create<CartStore>()(
       totalPrice: () =>
         get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
     }),
-    { name: "cart-storage" }
+    {
+      name: "cart-storage",
+      onRehydrateStorage: () => () => {
+        useCartStore.setState({ _hydrated: true });
+      },
+    }
   )
 );

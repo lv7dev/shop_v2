@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { getProducts } from "@/services/products";
+import { ProductCard } from "@/components/products/product-card";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { products } = await getProducts({ limit: 4 });
+
   return (
     <div>
       {/* Hero Section */}
@@ -23,17 +27,38 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured section placeholder */}
+      {/* Featured Products */}
       <section className="mx-auto max-w-7xl px-4 py-16">
-        <h2 className="mb-8 text-2xl font-bold">Featured Products</h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-72 rounded-lg border bg-muted/50 animate-pulse"
-            />
-          ))}
+        <div className="mb-8 flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Featured Products</h2>
+          <Button variant="outline" asChild>
+            <Link href="/products">View All</Link>
+          </Button>
         </div>
+        {products.length > 0 ? (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {products.map((product, i) => (
+              <ProductCard
+                key={product.id}
+                id={product.id}
+                name={product.name}
+                slug={product.slug}
+                price={Number(product.price)}
+                comparePrice={
+                  product.comparePrice ? Number(product.comparePrice) : null
+                }
+                images={product.images}
+                stock={product.stock}
+                category={product.category}
+                priority={i < 4}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="py-12 text-center text-muted-foreground">
+            No products available yet.
+          </p>
+        )}
       </section>
     </div>
   );

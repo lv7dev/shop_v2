@@ -3,7 +3,15 @@ import { db } from "@/lib/db";
 export async function getCategories() {
   return db.category.findMany({
     where: { parentId: null },
-    include: { children: true },
+    include: {
+      children: {
+        include: {
+          _count: { select: { products: { where: { isActive: true } } } },
+        },
+        orderBy: { name: "asc" },
+      },
+      _count: { select: { products: { where: { isActive: true } } } },
+    },
     orderBy: { name: "asc" },
   });
 }
@@ -12,8 +20,14 @@ export async function getCategoryBySlug(slug: string) {
   return db.category.findUnique({
     where: { slug },
     include: {
-      children: true,
-      products: { where: { isActive: true }, take: 12 },
+      children: {
+        include: {
+          _count: { select: { products: { where: { isActive: true } } } },
+        },
+        orderBy: { name: "asc" },
+      },
+      parent: true,
+      _count: { select: { products: { where: { isActive: true } } } },
     },
   });
 }

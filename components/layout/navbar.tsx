@@ -9,6 +9,7 @@ import { useUIStore } from "@/store/ui-store";
 import { APP_NAME, NAV_LINKS } from "@/lib/constants";
 
 export function Navbar() {
+  const hydrated = useCartStore((s) => s._hydrated);
   const totalItems = useCartStore((s) => s.totalItems());
   const { isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useUIStore();
 
@@ -38,7 +39,7 @@ export function Navbar() {
           <Button variant="ghost" size="icon" asChild>
             <Link href="/cart" className="relative">
               <ShoppingCart className="size-5" />
-              {totalItems > 0 && (
+              {hydrated && totalItems > 0 && (
                 <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                   {totalItems}
                 </span>
