@@ -1,17 +1,34 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ShoppingCart, Menu, Search, X, User } from "lucide-react";
+import { ShoppingCart, Menu, User, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCartStore } from "@/store/cart-store";
-import { useUIStore } from "@/store/ui-store";
 import { APP_NAME, NAV_LINKS } from "@/lib/constants";
+import { logout } from "@/actions/auth";
 
-export function Navbar() {
+type NavbarProps = {
+  user?: {
+    id: string;
+    name: string | null;
+    email: string;
+    role: string;
+  } | null;
+};
+
+export function Navbar({ user }: NavbarProps) {
   const hydrated = useCartStore((s) => s._hydrated);
-  const totalItems = useCartStore((s) => s.totalItems());
-  const { isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useUIStore();
+  const totalItems = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
+  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -47,14 +64,54 @@ export function Navbar() {
             </Link>
           </Button>
 
-          <Button variant="ghost" size="icon" asChild className="hidden md:inline-flex">
-            <Link href="/account">
-              <User className="size-5" />
-            </Link>
-          </Button>
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="hidden md:inline-flex">
+                  <User className="size-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium">{user.name || "User"}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/account">My Account</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/orders">My Orders</Link>
+                </DropdownMenuItem>
+                {user.role === "ADMIN" && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard">
+                        <LayoutDashboard className="mr-2 size-4" />
+                        Admin Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => logout()}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <LogOut className="mr-2 size-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
+              <Link href="/login">Sign In</Link>
+            </Button>
+          )}
 
           {/* Mobile menu */}
-          <Sheet open={isMobileMenuOpen} onOpenChange={toggleMobileMenu}>
+          <Sheet open={isMobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild className="md:hidden">
               <Button variant="ghost" size="icon">
                 <Menu className="size-5" />
@@ -66,19 +123,42 @@ export function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    onClick={closeMobileMenu}
+                    onClick={() => setMobileMenuOpen(false)}
                     className="text-lg font-medium"
                   >
                     {link.label}
                   </Link>
                 ))}
-                <Link
-                  href="/account"
-                  onClick={closeMobileMenu}
-                  className="text-lg font-medium"
-                >
-                  Account
-                </Link>
+                {user ? (
+                  <>
+                    <Link href="/account" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium">
+                      Account
+                    </Link>
+                    <Link href="/orders" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium">
+                      Orders
+                    </Link>
+                    {user.role === "ADMIN" && (
+                      <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium">
+                        Admin Dashboard
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => { setMobileMenuOpen(false); logout(); }}
+                      className="text-left text-lg font-medium text-destructive"
+                    >
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium">
+                      Sign In
+                    </Link>
+                    <Link href="/register" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium">
+                      Sign Up
+                    </Link>
+                  </>
+                )}
               </nav>
             </SheetContent>
           </Sheet>

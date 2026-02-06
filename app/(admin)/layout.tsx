@@ -1,18 +1,22 @@
 import Link from "next/link";
+import { LayoutDashboard, Package, ShoppingCart, Users, ArrowLeft } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
+import { requireAdmin } from "@/lib/auth";
 
 const ADMIN_NAV = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Products", href: "/dashboard/products" },
-  { label: "Orders", href: "/dashboard/orders" },
-  { label: "Users", href: "/dashboard/users" },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Products", href: "/dashboard/products", icon: Package },
+  { label: "Orders", href: "/dashboard/orders", icon: ShoppingCart },
+  { label: "Users", href: "/dashboard/users", icon: Users },
 ] as const;
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  await requireAdmin();
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
@@ -27,8 +31,9 @@ export default function AdminLayout({
             <Link
               key={link.href}
               href={link.href}
-              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             >
+              <link.icon className="size-4" />
               {link.label}
             </Link>
           ))}
@@ -38,8 +43,9 @@ export default function AdminLayout({
       {/* Main content */}
       <div className="flex flex-1 flex-col">
         <header className="flex h-16 items-center border-b px-6">
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-            &larr; Back to store
+          <Link href="/" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="size-4" />
+            Back to store
           </Link>
         </header>
         <main className="flex-1 p-6">{children}</main>

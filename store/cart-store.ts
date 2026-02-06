@@ -63,8 +63,12 @@ export const useCartStore = create<CartStore>()(
     }),
     {
       name: "cart-storage",
+      partialize: (state) => ({ items: state.items }),
       onRehydrateStorage: () => () => {
-        useCartStore.setState({ _hydrated: true });
+        // Must defer setState — persist overwrites state synchronously after this callback
+        queueMicrotask(() => {
+          useCartStore.setState({ _hydrated: true });
+        });
       },
     }
   )
