@@ -10,6 +10,22 @@ type CartItemInput = {
   quantity: number;
 };
 
+function serializeOrder(order: Record<string, unknown>) {
+  return {
+    ...order,
+    subtotal: Number(order.subtotal),
+    shippingCost: Number(order.shippingCost),
+    tax: Number(order.tax),
+    total: Number(order.total),
+    items: Array.isArray(order.items)
+      ? order.items.map((item: Record<string, unknown>) => ({
+          ...item,
+          price: Number(item.price),
+        }))
+      : undefined,
+  };
+}
+
 export async function createOrder(
   items: CartItemInput[],
   addressId?: string,
@@ -95,7 +111,7 @@ export async function createOrder(
   revalidatePath("/orders");
   revalidatePath("/products");
 
-  return { success: true, order };
+  return { success: true, order: serializeOrder(order) };
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
@@ -113,7 +129,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   revalidatePath(`/orders/${orderId}`);
   revalidatePath("/admin/orders");
 
-  return { success: true, order: updated };
+  return { success: true, order: serializeOrder(updated) };
 }
 
 export async function cancelOrder(orderId: string) {

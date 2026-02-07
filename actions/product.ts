@@ -17,6 +17,14 @@ type ProductInput = {
   categoryId?: string;
 };
 
+function serializeProduct(product: Record<string, unknown>) {
+  return {
+    ...product,
+    price: Number(product.price),
+    comparePrice: product.comparePrice ? Number(product.comparePrice) : null,
+  };
+}
+
 export async function createProduct(data: ProductInput) {
   const slug = slugify(data.name);
 
@@ -54,7 +62,7 @@ export async function createProduct(data: ProductInput) {
   revalidatePath("/products");
   revalidatePath("/admin/products");
 
-  return { success: true, product };
+  return { success: true, product: serializeProduct(product) };
 }
 
 export async function updateProduct(id: string, data: Partial<ProductInput>) {
@@ -109,7 +117,7 @@ export async function updateProduct(id: string, data: Partial<ProductInput>) {
   revalidatePath(`/products/${updated.slug}`);
   revalidatePath("/admin/products");
 
-  return { success: true, product: updated };
+  return { success: true, product: serializeProduct(updated) };
 }
 
 export async function deleteProduct(id: string) {
