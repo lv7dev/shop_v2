@@ -56,11 +56,13 @@ export function Navbar({ user }: NavbarProps) {
           <Button variant="ghost" size="icon" asChild>
             <Link href="/cart" className="relative">
               <ShoppingCart className="size-5" />
-              {hydrated && totalItems > 0 && (
-                <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                  {totalItems}
-                </span>
-              )}
+              <span
+                className={`absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground transition-transform ${
+                  hydrated && totalItems > 0 ? "scale-100" : "scale-0"
+                }`}
+              >
+                {totalItems}
+              </span>
             </Link>
           </Button>
 
