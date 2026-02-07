@@ -51,7 +51,7 @@ export function CartContent() {
             variant="ghost"
             size="sm"
             className="text-muted-foreground hover:text-destructive"
-            onClick={clearCart}
+            onClick={() => clearCart()}
           >
             <Trash2 className="mr-1 size-4" />
             Clear Cart

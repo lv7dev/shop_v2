@@ -3,20 +3,37 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { register } from "@/actions/auth";
+import { saveCartToDB } from "@/actions/cart-db";
+import { useCartStore } from "@/store/cart-store";
 
 export function RegisterForm() {
+  const router = useRouter();
+  const items = useCartStore((s) => s.items);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setError("");
     setLoading(true);
+
     const result = await register(formData);
-    if (result?.error) {
+
+    if ("error" in result) {
       setError(result.error);
       setLoading(false);
+      return;
     }
+
+    // New user: save localStorage cart to DB if any items
+    if (items.length > 0) {
+      await saveCartToDB(
+        items.map((item) => ({ productId: item.id, quantity: item.quantity }))
+      );
+    }
+
+    router.push(result.redirectUrl);
   }
 
   return (

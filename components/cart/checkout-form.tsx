@@ -90,7 +90,8 @@ export function CheckoutForm() {
 
       clearCart();
       toast.success("Order placed successfully!");
-      router.push(`/orders/${result.order!.id}?new=true`);
+      const order = result.order as unknown as { id: string };
+      router.push(`/orders/${order.id}?new=true`);
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {

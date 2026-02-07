@@ -28,7 +28,13 @@ type NavbarProps = {
 export function Navbar({ user }: NavbarProps) {
   const hydrated = useCartStore((s) => s._hydrated);
   const totalItems = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
+  const clearCart = useCartStore((s) => s.clearCart);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  function handleLogout() {
+    clearCart(false); // Clear localStorage only, keep DB cart for next login
+    logout();
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -98,7 +104,7 @@ export function Navbar({ user }: NavbarProps) {
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => logout()}
+                  onClick={handleLogout}
                   className="text-destructive focus:text-destructive"
                 >
                   <LogOut className="mr-2 size-4" />
@@ -145,7 +151,7 @@ export function Navbar({ user }: NavbarProps) {
                       </Link>
                     )}
                     <button
-                      onClick={() => { setMobileMenuOpen(false); logout(); }}
+                      onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
                       className="text-left text-lg font-medium text-destructive"
                     >
                       Sign Out

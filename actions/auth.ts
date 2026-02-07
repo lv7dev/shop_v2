@@ -9,7 +9,20 @@ import {
 } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-export async function register(formData: FormData) {
+type AuthSuccess = {
+  success: true;
+  hasDbCart: boolean;
+  dbCartItemCount: number;
+  redirectUrl: string;
+};
+
+type AuthError = {
+  error: string;
+};
+
+type AuthResult = AuthSuccess | AuthError;
+
+export async function register(formData: FormData): Promise<AuthResult> {
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
@@ -39,10 +52,15 @@ export async function register(formData: FormData) {
 
   await createSession({ userId: user.id, role: user.role });
 
-  redirect("/");
+  return {
+    success: true,
+    hasDbCart: false,
+    dbCartItemCount: 0,
+    redirectUrl: "/",
+  };
 }
 
-export async function login(formData: FormData) {
+export async function login(formData: FormData): Promise<AuthResult> {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const callbackUrl = formData.get("callbackUrl") as string;
@@ -66,13 +84,23 @@ export async function login(formData: FormData) {
 
   await createSession({ userId: user.id, role: user.role });
 
-  if (user.role === "ADMIN") {
-    redirect("/dashboard");
-  }
+  const cartCount = await db.cartItem.count({
+    where: { userId: user.id },
+  });
 
-  // Only allow relative URLs to prevent open redirect attacks
-  const safeCallback = callbackUrl?.startsWith("/") ? callbackUrl : "/";
-  redirect(safeCallback);
+  const redirectUrl =
+    user.role === "ADMIN"
+      ? "/dashboard"
+      : callbackUrl?.startsWith("/")
+        ? callbackUrl
+        : "/";
+
+  return {
+    success: true,
+    hasDbCart: cartCount > 0,
+    dbCartItemCount: cartCount,
+    redirectUrl,
+  };
 }
 
 export async function logout() {
