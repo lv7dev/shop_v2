@@ -1,14 +1,20 @@
 "use server";
 
 import { db } from "@/lib/db";
+import { getSession } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 export async function createReview(
-  userId: string,
   productId: string,
   rating: number,
   comment?: string
 ) {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "Please sign in to leave a review" };
+  }
+  const userId = session.userId;
+
   if (rating < 1 || rating > 5) {
     return { success: false, error: "Rating must be between 1 and 5" };
   }
@@ -41,7 +47,13 @@ export async function createReview(
   return { success: true, review };
 }
 
-export async function deleteReview(reviewId: string, userId: string) {
+export async function deleteReview(reviewId: string) {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "Unauthorized" };
+  }
+  const userId = session.userId;
+
   const review = await db.review.findFirst({
     where: { id: reviewId, userId },
     include: { product: { select: { slug: true } } },

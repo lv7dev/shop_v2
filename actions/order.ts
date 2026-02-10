@@ -1,14 +1,10 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { getSession, requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import type { OrderStatus } from "@/lib/generated/prisma/client";
-
-type CartItemInput = {
-  id: string;
-  quantity: number;
-};
+import type { CartItemInput } from "@/types/cart";
 
 function serializeOrder(order: Record<string, unknown>) {
   return {
@@ -115,6 +111,7 @@ export async function createOrder(
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
+  await requireAdmin();
   const order = await db.order.findUnique({ where: { id: orderId } });
   if (!order) {
     return { success: false, error: "Order not found" };

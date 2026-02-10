@@ -1,6 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { slugify } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ function serializeProduct(product: Record<string, unknown>) {
 }
 
 export async function createProduct(data: ProductInput) {
+  await requireAdmin();
   const slug = slugify(data.name);
 
   // Check slug uniqueness
@@ -66,6 +68,7 @@ export async function createProduct(data: ProductInput) {
 }
 
 export async function updateProduct(id: string, data: Partial<ProductInput>) {
+  await requireAdmin();
   const product = await db.product.findUnique({ where: { id } });
   if (!product) {
     return { success: false, error: "Product not found" };
@@ -121,6 +124,7 @@ export async function updateProduct(id: string, data: Partial<ProductInput>) {
 }
 
 export async function deleteProduct(id: string) {
+  await requireAdmin();
   const product = await db.product.findUnique({ where: { id } });
   if (!product) {
     return { success: false, error: "Product not found" };

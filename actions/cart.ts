@@ -1,12 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-
-type CartItemInput = {
-  id: string;
-  quantity: number;
-  price: number;
-};
+import type { CartItemWithPrice } from "@/types/cart";
 
 type ValidatedCartItem = {
   id: string;
@@ -20,7 +15,7 @@ type ValidatedCartItem = {
   stockInsufficient: boolean;
 };
 
-export async function validateCart(items: CartItemInput[]) {
+export async function validateCart(items: CartItemWithPrice[]) {
   if (items.length === 0) {
     return { success: true, items: [], hasIssues: false };
   }

@@ -1,13 +1,9 @@
 import { jwtVerify } from "jose";
+import type { SessionPayload } from "@/types/auth";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "dev-secret-change-in-production"
 );
-
-type SessionPayload = {
-  userId: string;
-  role: string;
-};
 
 export async function verifyToken(token: string) {
   try {

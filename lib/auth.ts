@@ -2,6 +2,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
+import type { SessionPayload } from "@/types/auth";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "dev-secret-change-in-production"
@@ -15,11 +16,6 @@ export async function hashPassword(password: string) {
 export async function verifyPassword(password: string, hash: string) {
   return bcrypt.compare(password, hash);
 }
-
-type SessionPayload = {
-  userId: string;
-  role: string;
-};
 
 export async function createSession(payload: SessionPayload) {
   const token = await new SignJWT(payload)

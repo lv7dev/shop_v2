@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth-edge";
 
-const PUBLIC_PATHS = ["/", "/products", "/categories", "/cart", "/login", "/register", "/forgot-password"];
+const AUTH_PATHS = ["/login", "/register", "/forgot-password"];
+const PUBLIC_PATHS = ["/", "/products", "/categories", "/cart", ...AUTH_PATHS];
 
 function isPublic(pathname: string) {
   if (PUBLIC_PATHS.includes(pathname)) return true;
@@ -13,14 +14,30 @@ function isPublic(pathname: string) {
   return false;
 }
 
+function isAuthPage(pathname: string) {
+  return AUTH_PATHS.includes(pathname);
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const token = request.cookies.get("session")?.value;
 
+  // For auth pages, check if user is already logged in and redirect away
+  if (isAuthPage(pathname)) {
+    const session = token ? await verifyToken(token) : null;
+    if (session) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
+  }
+
+  // Public paths don't require auth
   if (isPublic(pathname)) {
     return NextResponse.next();
   }
 
-  const token = request.cookies.get("session")?.value;
   const session = token ? await verifyToken(token) : null;
 
   // Redirect unauthenticated users to login with return URL
@@ -33,13 +50,6 @@ export async function middleware(request: NextRequest) {
 
   // Protect admin routes
   if (pathname.startsWith("/dashboard") && session.role !== "ADMIN") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
-  }
-
-  // Redirect logged-in users away from auth pages
-  if (pathname === "/login" || pathname === "/register") {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

@@ -2,11 +2,7 @@
 
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-
-type CartItemInput = {
-  productId: string;
-  quantity: number;
-};
+import type { CartDbItemInput } from "@/types/cart";
 
 export type EnrichedCartItem = {
   id: string;
@@ -60,7 +56,7 @@ export async function loadCartFromDB(): Promise<{
   return { success: true, items };
 }
 
-export async function saveCartToDB(items: CartItemInput[]) {
+export async function saveCartToDB(items: CartDbItemInput[]) {
   const userId = await getAuthUserId();
   if (!userId) return { success: false };
 
@@ -121,7 +117,7 @@ export async function clearCartDB() {
   return { success: true };
 }
 
-export async function mergeCartsInDB(localItems: CartItemInput[]) {
+export async function mergeCartsInDB(localItems: CartDbItemInput[]) {
   const userId = await getAuthUserId();
   if (!userId) return { success: false };
 

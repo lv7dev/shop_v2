@@ -1,6 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { slugify } from "@/lib/utils";
 
@@ -12,6 +13,7 @@ type CategoryInput = {
 };
 
 export async function createCategory(data: CategoryInput) {
+  await requireAdmin();
   const slug = slugify(data.name);
 
   const existing = await db.category.findUnique({ where: { slug } });
@@ -52,6 +54,7 @@ export async function updateCategory(
   id: string,
   data: Partial<CategoryInput>
 ) {
+  await requireAdmin();
   const category = await db.category.findUnique({ where: { id } });
   if (!category) {
     return { success: false, error: "Category not found" };
@@ -95,6 +98,7 @@ export async function updateCategory(
 }
 
 export async function deleteCategory(id: string) {
+  await requireAdmin();
   const category = await db.category.findUnique({
     where: { id },
     include: {
