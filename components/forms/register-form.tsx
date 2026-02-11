@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { register } from "@/actions/auth";
-import { saveCartToDB } from "@/actions/cart-db";
 import { useCartStore } from "@/store/cart-store";
 
 export function RegisterForm() {
@@ -18,19 +17,17 @@ export function RegisterForm() {
     setError("");
     setLoading(true);
 
-    const result = await register(formData);
+    const localCartItems = items.map((item) => ({
+      productId: item.id,
+      quantity: item.quantity,
+    }));
+
+    const result = await register(formData, localCartItems);
 
     if ("error" in result) {
       setError(result.error);
       setLoading(false);
       return;
-    }
-
-    // New user: save localStorage cart to DB if any items
-    if (items.length > 0) {
-      await saveCartToDB(
-        items.map((item) => ({ productId: item.id, quantity: item.quantity }))
-      );
     }
 
     router.push(result.redirectUrl);

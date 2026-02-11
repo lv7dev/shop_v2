@@ -4,14 +4,10 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { login } from "@/actions/auth";
-import {
-  loadCartFromDB,
-  mergeCartsInDB,
-  saveCartToDB,
-} from "@/actions/cart-db";
+import { loginWithCart, resolveCartMerge } from "@/actions/auth";
 import { useCartStore } from "@/store/cart-store";
 import { CartMergeModal } from "@/components/cart/cart-merge-modal";
+import type { CartDbItemInput } from "@/types/cart";
 
 export function LoginForm() {
   const router = useRouter();
@@ -26,8 +22,8 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [showMergeModal, setShowMergeModal] = useState(false);
-  const [loginResult, setLoginResult] = useState<{
-    hasDbCart: boolean;
+  const [mergeContext, setMergeContext] = useState<{
+    localCartItems: CartDbItemInput[];
     dbCartItemCount: number;
     redirectUrl: string;
   } | null>(null);
@@ -36,21 +32,25 @@ export function LoginForm() {
     setError("");
     setLoading(true);
 
-    const result = await login(formData);
+    const localCartItems: CartDbItemInput[] = items.map((item) => ({
+      productId: item.id,
+      quantity: item.quantity,
+    }));
 
-    if ("error" in result) {
+    const result = await loginWithCart(formData, localCartItems);
+
+    // Auth error (invalid credentials, etc.)
+    if ("error" in result && !("success" in result)) {
       setError(result.error);
       setLoading(false);
       return;
     }
 
-    const localItemCount = items.length;
-
-    // Case 1: localStorage items + DB cart -> Show merge modal
-    if (localItemCount > 0 && result.hasDbCart) {
-      setLoginResult({
-        hasDbCart: result.hasDbCart,
-        dbCartItemCount: result.dbCartItemCount,
+    // Cart conflict — need user to choose merge strategy
+    if ("success" in result && result.error === "MERGE_NEEDED") {
+      setMergeContext({
+        localCartItems,
+        dbCartItemCount: result.dbCartItemCount ?? 0,
         redirectUrl: result.redirectUrl,
       });
       setShowMergeModal(true);
@@ -58,55 +58,58 @@ export function LoginForm() {
       return;
     }
 
-    // Case 2: localStorage items + no DB cart -> Save to DB
-    if (localItemCount > 0 && !result.hasDbCart) {
-      await saveCartToDB(
-        items.map((item) => ({ productId: item.id, quantity: item.quantity }))
-      );
-      router.push(result.redirectUrl);
-      return;
+    // No conflict — cart was handled server-side
+    if ("items" in result && result.items.length > 0) {
+      replaceCart(result.items);
     }
-
-    // Case 3: No localStorage items + DB cart -> Load from DB
-    if (localItemCount === 0 && result.hasDbCart) {
-      const dbCart = await loadCartFromDB();
-      if (dbCart.success) {
-        replaceCart(dbCart.items);
-      }
-      router.push(result.redirectUrl);
-      return;
-    }
-
-    // Case 4: No items anywhere -> Just redirect
     router.push(result.redirectUrl);
   }
 
   async function handleMerge() {
-    if (!loginResult) return;
+    if (!mergeContext) return;
 
-    await mergeCartsInDB(
-      items.map((item) => ({ productId: item.id, quantity: item.quantity }))
-    );
+    try {
+      const result = await resolveCartMerge(
+        mergeContext.localCartItems,
+        "merge"
+      );
 
-    const dbCart = await loadCartFromDB();
-    if (dbCart.success) {
-      replaceCart(dbCart.items);
+      if (!result.success) {
+        setError("Failed to merge carts. Please try again.");
+        setShowMergeModal(false);
+        return;
+      }
+
+      replaceCart(result.items);
+      setShowMergeModal(false);
+      router.push(mergeContext.redirectUrl);
+    } catch (err) {
+      console.error("[LoginForm] Cart merge error:", err);
+      setError("An error occurred while merging carts.");
+      setShowMergeModal(false);
     }
-
-    setShowMergeModal(false);
-    router.push(loginResult.redirectUrl);
   }
 
   async function handleKeepDb() {
-    if (!loginResult) return;
+    if (!mergeContext) return;
 
-    const dbCart = await loadCartFromDB();
-    if (dbCart.success) {
-      replaceCart(dbCart.items);
+    try {
+      const result = await resolveCartMerge([], "keep_db");
+
+      if (!result.success) {
+        setError("Failed to load saved cart. Please try again.");
+        setShowMergeModal(false);
+        return;
+      }
+
+      replaceCart(result.items);
+      setShowMergeModal(false);
+      router.push(mergeContext.redirectUrl);
+    } catch (err) {
+      console.error("Cart load error:", err);
+      setError("An error occurred while loading your cart.");
+      setShowMergeModal(false);
     }
-
-    setShowMergeModal(false);
-    router.push(loginResult.redirectUrl);
   }
 
   return (
@@ -233,8 +236,8 @@ export function LoginForm() {
 
       <CartMergeModal
         open={showMergeModal}
-        localItemCount={items.length}
-        dbItemCount={loginResult?.dbCartItemCount || 0}
+        localItemCount={mergeContext?.localCartItems.length || 0}
+        dbItemCount={mergeContext?.dbCartItemCount || 0}
         onMerge={handleMerge}
         onKeepDb={handleKeepDb}
       />

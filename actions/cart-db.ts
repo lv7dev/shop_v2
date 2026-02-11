@@ -26,56 +26,66 @@ export async function loadCartFromDB(): Promise<{
   const userId = await getAuthUserId();
   if (!userId) return { success: false, items: [] };
 
-  const cartItems = await db.cartItem.findMany({
-    where: { userId },
-    include: {
-      product: {
-        select: {
-          id: true,
-          name: true,
-          price: true,
-          images: true,
-          stock: true,
-          isActive: true,
+  try {
+    const cartItems = await db.cartItem.findMany({
+      where: { userId },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            images: true,
+            stock: true,
+            isActive: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  const items: EnrichedCartItem[] = cartItems
-    .filter((item) => item.product.isActive)
-    .map((item) => ({
-      id: item.product.id,
-      name: item.product.name,
-      price: Number(item.product.price),
-      image: item.product.images[0] ?? "",
-      quantity: Math.min(item.quantity, item.product.stock),
-      stock: item.product.stock,
-    }));
+    const items: EnrichedCartItem[] = cartItems
+      .filter((item) => item.product.isActive)
+      .map((item) => ({
+        id: item.product.id,
+        name: item.product.name,
+        price: Number(item.product.price),
+        image: item.product.images[0] ?? "",
+        quantity: Math.min(item.quantity, item.product.stock),
+        stock: item.product.stock,
+      }));
 
-  return { success: true, items };
+    return { success: true, items };
+  } catch (error) {
+    console.error("Error loading cart from DB:", error);
+    return { success: false, items: [] };
+  }
 }
 
 export async function saveCartToDB(items: CartDbItemInput[]) {
   const userId = await getAuthUserId();
   if (!userId) return { success: false };
 
-  await db.$transaction([
-    db.cartItem.deleteMany({ where: { userId } }),
-    ...(items.length > 0
-      ? [
-          db.cartItem.createMany({
-            data: items.map((item) => ({
-              userId,
-              productId: item.productId,
-              quantity: item.quantity,
-            })),
-          }),
-        ]
-      : []),
-  ]);
+  try {
+    await db.$transaction([
+      db.cartItem.deleteMany({ where: { userId } }),
+      ...(items.length > 0
+        ? [
+            db.cartItem.createMany({
+              data: items.map((item) => ({
+                userId,
+                productId: item.productId,
+                quantity: item.quantity,
+              })),
+            }),
+          ]
+        : []),
+    ]);
 
-  return { success: true };
+    return { success: true };
+  } catch (error) {
+    console.error("Error saving cart to DB:", error);
+    return { success: false };
+  }
 }
 
 export async function syncCartItemToDB(productId: string, quantity: number) {
@@ -121,31 +131,44 @@ export async function mergeCartsInDB(localItems: CartDbItemInput[]) {
   const userId = await getAuthUserId();
   if (!userId) return { success: false };
 
-  const existingItems = await db.cartItem.findMany({
-    where: { userId },
-  });
+  try {
+    const existingItems = await db.cartItem.findMany({
+      where: { userId },
+    });
 
-  const mergedMap = new Map<string, number>();
+    const mergedMap = new Map<string, number>();
 
-  for (const item of existingItems) {
-    mergedMap.set(item.productId, item.quantity);
-  }
+    for (const item of existingItems) {
+      mergedMap.set(item.productId, item.quantity);
+    }
 
-  for (const item of localItems) {
-    const existing = mergedMap.get(item.productId) || 0;
-    mergedMap.set(item.productId, existing + item.quantity);
-  }
+    for (const item of localItems) {
+      const existing = mergedMap.get(item.productId) || 0;
+      mergedMap.set(item.productId, existing + item.quantity);
+    }
 
-  await db.$transaction([
-    db.cartItem.deleteMany({ where: { userId } }),
-    db.cartItem.createMany({
-      data: Array.from(mergedMap.entries()).map(([productId, quantity]) => ({
+    const mergedData = Array.from(mergedMap.entries()).map(
+      ([productId, quantity]) => ({
         userId,
         productId,
         quantity,
-      })),
-    }),
-  ]);
+      }),
+    );
 
-  return { success: true };
+    if (mergedData.length === 0) {
+      return { success: true };
+    }
+
+    await db.$transaction([
+      db.cartItem.deleteMany({ where: { userId } }),
+      db.cartItem.createMany({
+        data: mergedData,
+      }),
+    ]);
+
+    return { success: true };
+  } catch (error) {
+    console.error("mergeCartsInDB error:", error);
+    return { success: false };
+  }
 }

@@ -31,12 +31,22 @@ export function CartMergeModal({
 
   async function handleMerge() {
     setLoading(true);
-    await onMerge();
+    try {
+      await onMerge();
+    } catch (error) {
+      console.error("Failed to merge carts:", error);
+      setLoading(false);
+    }
   }
 
   async function handleKeepDb() {
     setLoading(true);
-    await onKeepDb();
+    try {
+      await onKeepDb();
+    } catch (error) {
+      console.error("Failed to keep DB cart:", error);
+      setLoading(false);
+    }
   }
 
   return (

@@ -18,7 +18,7 @@ function isAuthPage(pathname: string) {
   return AUTH_PATHS.includes(pathname);
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("session")?.value;
 
