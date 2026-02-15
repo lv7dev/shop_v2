@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { loginWithCart, resolveCartMerge } from "@/actions/auth";
+import { loginWithCart } from "@/actions/auth";
 import { useCartStore } from "@/store/cart-store";
 import { CartMergeModal } from "@/components/cart/cart-merge-modal";
 import type { CartDbItemInput } from "@/types/cart";
@@ -65,13 +65,28 @@ export function LoginForm() {
     router.push(result.redirectUrl);
   }
 
+  async function callMergeAPI(
+    localCartItems: CartDbItemInput[],
+    strategy: "merge" | "keep_db",
+  ) {
+    const res = await fetch("/api/cart/merge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ localCartItems, strategy }),
+    });
+    return res.json() as Promise<{
+      success: boolean;
+      items: { id: string; name: string; price: number; image: string; quantity: number; stock: number }[];
+    }>;
+  }
+
   async function handleMerge() {
     if (!mergeContext) return;
 
     try {
-      const result = await resolveCartMerge(
+      const result = await callMergeAPI(
         mergeContext.localCartItems,
-        "merge"
+        "merge",
       );
 
       if (!result.success) {
@@ -94,7 +109,7 @@ export function LoginForm() {
     if (!mergeContext) return;
 
     try {
-      const result = await resolveCartMerge([], "keep_db");
+      const result = await callMergeAPI([], "keep_db");
 
       if (!result.success) {
         setError("Failed to load saved cart. Please try again.");
@@ -117,8 +132,13 @@ export function LoginForm() {
       <div className="rounded-3xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-xl">
         {/* Header */}
         <div className="flex flex-col items-center">
-          <div className="flex size-16 items-center justify-center rounded-2xl border border-white/30 bg-gradient-to-r from-purple-400 to-pink-400">
-            <Image src="/icons/fingerprint-icon.svg" alt="Logo" width={24} height={24} />
+          <div className="flex size-16 items-center justify-center rounded-2xl border border-white/30 bg-linear-to-r from-purple-400 to-pink-400">
+            <Image
+              src="/icons/fingerprint-icon.svg"
+              alt="Logo"
+              width={24}
+              height={24}
+            />
           </div>
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-white">
             Welcome Back
@@ -144,7 +164,12 @@ export function LoginForm() {
             </label>
             <div className="relative">
               <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2">
-                <Image src="/icons/mail-icon.svg" alt="" width={16} height={16} />
+                <Image
+                  src="/icons/mail-icon.svg"
+                  alt=""
+                  width={16}
+                  height={16}
+                />
               </div>
               <input
                 type="email"
@@ -163,7 +188,12 @@ export function LoginForm() {
             </label>
             <div className="relative">
               <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2">
-                <Image src="/icons/lock-icon.svg" alt="" width={14} height={16} />
+                <Image
+                  src="/icons/lock-icon.svg"
+                  alt=""
+                  width={14}
+                  height={16}
+                />
               </div>
               <input
                 type={showPassword ? "text" : "password"}
@@ -177,7 +207,12 @@ export function LoginForm() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white/80"
               >
-                <Image src="/icons/eye-icon.svg" alt="Toggle password visibility" width={18} height={16} />
+                <Image
+                  src="/icons/eye-icon.svg"
+                  alt="Toggle password visibility"
+                  width={18}
+                  height={16}
+                />
               </button>
             </div>
           </div>
@@ -191,7 +226,10 @@ export function LoginForm() {
               />
               Remember me
             </label>
-            <Link href="/forgot-password" className="text-sm font-medium text-purple-300 hover:text-purple-200">
+            <Link
+              href="/forgot-password"
+              className="text-sm font-medium text-purple-300 hover:text-purple-200"
+            >
               Forgot password?
             </Link>
           </div>
@@ -200,7 +238,7 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 py-4 text-base font-semibold text-white shadow-lg transition hover:from-purple-600 hover:to-pink-600 disabled:opacity-50"
+            className="w-full rounded-2xl bg-linear-to-r from-purple-500 to-pink-500 py-4 text-base font-semibold text-white shadow-lg transition hover:from-purple-600 hover:to-pink-600 disabled:opacity-50"
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
@@ -228,7 +266,10 @@ export function LoginForm() {
         {/* Sign up link */}
         <div className="mt-8 text-center">
           <p className="text-sm text-white/60">{`Don't have an account?`}</p>
-          <Link href="/register" className="mt-1 inline-block text-base font-medium text-purple-300 hover:text-purple-200">
+          <Link
+            href="/register"
+            className="mt-1 inline-block text-base font-medium text-purple-300 hover:text-purple-200"
+          >
             Sign up
           </Link>
         </div>
