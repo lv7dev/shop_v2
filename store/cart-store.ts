@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { toast } from "sonner";
 import {
   syncCartItemToDB,
   removeCartItemFromDB,
@@ -58,7 +59,9 @@ export const useCartStore = create<CartStore>()(
             : [...state.items, { ...item, quantity: 1 }];
 
           if (state._isAuthenticated) {
-            syncCartItemToDB(item.id, newQuantity).catch(() => {});
+            syncCartItemToDB(item.id, newQuantity).catch(() => {
+              toast.error("Failed to sync cart. Please try again.");
+            });
           }
 
           return { items: newItems };
@@ -67,7 +70,9 @@ export const useCartStore = create<CartStore>()(
       removeItem: (id) =>
         set((state) => {
           if (state._isAuthenticated) {
-            removeCartItemFromDB(id).catch(() => {});
+            removeCartItemFromDB(id).catch(() => {
+              toast.error("Failed to sync cart. Please try again.");
+            });
           }
           return { items: state.items.filter((i) => i.id !== id) };
         }),
@@ -80,7 +85,9 @@ export const useCartStore = create<CartStore>()(
           const clampedQty = Math.max(1, Math.min(quantity, item.stock));
 
           if (state._isAuthenticated) {
-            syncCartItemToDB(id, clampedQty).catch(() => {});
+            syncCartItemToDB(id, clampedQty).catch(() => {
+              toast.error("Failed to sync cart. Please try again.");
+            });
           }
 
           return {
@@ -93,7 +100,9 @@ export const useCartStore = create<CartStore>()(
       clearCart: (syncToDb = true) => {
         const state = get();
         if (syncToDb && state._isAuthenticated) {
-          clearCartDB().catch(() => {});
+          clearCartDB().catch(() => {
+            toast.error("Failed to sync cart. Please try again.");
+          });
         }
         set({ items: [] });
       },

@@ -8,6 +8,7 @@ import {
   deleteSession,
 } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import * as Sentry from "@sentry/nextjs";
 import type { CartDbItemInput } from "@/types/cart";
 import type { EnrichedCartItem } from "@/actions/cart-db";
 
@@ -48,40 +49,46 @@ export async function register(
     return { error: "Password must be at least 6 characters" };
   }
 
-  const existing = await db.user.findUnique({ where: { email } });
-  if (existing) {
-    return { error: "Email already registered" };
-  }
+  try {
+    const existing = await db.user.findUnique({ where: { email } });
+    if (existing) {
+      return { error: "Email already registered" };
+    }
 
-  const hashed = await hashPassword(password);
+    const hashed = await hashPassword(password);
 
-  const user = await db.user.create({
-    data: {
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
-      password: hashed,
-    },
-  });
-
-  await createSession({ userId: user.id, role: user.role });
-
-  // Save local cart to DB in the same server action (avoids separate call after cookie set)
-  if (localCartItems && localCartItems.length > 0) {
-    await db.cartItem.createMany({
-      data: localCartItems.map((item) => ({
-        userId: user.id,
-        productId: item.productId,
-        quantity: item.quantity,
-      })),
+    const user = await db.user.create({
+      data: {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password: hashed,
+      },
     });
-  }
 
-  return {
-    success: true,
-    hasDbCart: false,
-    dbCartItemCount: 0,
-    redirectUrl: "/",
-  };
+    await createSession({ userId: user.id, role: user.role });
+
+    // Save local cart to DB in the same server action (avoids separate call after cookie set)
+    if (localCartItems && localCartItems.length > 0) {
+      await db.cartItem.createMany({
+        data: localCartItems.map((item) => ({
+          userId: user.id,
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
+      });
+    }
+
+    return {
+      success: true,
+      hasDbCart: false,
+      dbCartItemCount: 0,
+      redirectUrl: "/",
+    };
+  } catch (error) {
+    Sentry.captureException(error);
+    console.error("Register error:", error);
+    return { error: "Something went wrong. Please try again." };
+  }
 }
 
 export async function login(formData: FormData): Promise<AuthResult> {
@@ -93,38 +100,44 @@ export async function login(formData: FormData): Promise<AuthResult> {
     return { error: "Email and password are required" };
   }
 
-  const user = await db.user.findUnique({
-    where: { email: email.trim().toLowerCase() },
-  });
+  try {
+    const user = await db.user.findUnique({
+      where: { email: email.trim().toLowerCase() },
+    });
 
-  if (!user || !user.password) {
-    return { error: "Invalid email or password" };
+    if (!user || !user.password) {
+      return { error: "Invalid email or password" };
+    }
+
+    const valid = await verifyPassword(password, user.password);
+    if (!valid) {
+      return { error: "Invalid email or password" };
+    }
+
+    await createSession({ userId: user.id, role: user.role });
+
+    const cartCount = await db.cartItem.count({
+      where: { userId: user.id },
+    });
+
+    const redirectUrl =
+      user.role === "ADMIN"
+        ? "/dashboard"
+        : callbackUrl?.startsWith("/")
+          ? callbackUrl
+          : "/";
+
+    return {
+      success: true,
+      hasDbCart: cartCount > 0,
+      dbCartItemCount: cartCount,
+      redirectUrl,
+    };
+  } catch (error) {
+    Sentry.captureException(error);
+    console.error("Login error:", error);
+    return { error: "Something went wrong. Please try again." };
   }
-
-  const valid = await verifyPassword(password, user.password);
-  if (!valid) {
-    return { error: "Invalid email or password" };
-  }
-
-  await createSession({ userId: user.id, role: user.role });
-
-  const cartCount = await db.cartItem.count({
-    where: { userId: user.id },
-  });
-
-  const redirectUrl =
-    user.role === "ADMIN"
-      ? "/dashboard"
-      : callbackUrl?.startsWith("/")
-        ? callbackUrl
-        : "/";
-
-  return {
-    success: true,
-    hasDbCart: cartCount > 0,
-    dbCartItemCount: cartCount,
-    redirectUrl,
-  };
 }
 
 export async function loginWithCart(
@@ -137,53 +150,59 @@ export async function loginWithCart(
     return loginResult;
   }
 
-  const email = formData.get("email") as string;
-  const user = await db.user.findUnique({
-    where: { email: email.trim().toLowerCase() },
-    select: { id: true },
-  });
-
-  if (!user) {
-    return { error: "User not found" };
-  }
-
-  const hasLocalItems = localCartItems.length > 0;
-
-  // Case 1: No local items -> Load from DB (or empty)
-  if (!hasLocalItems) {
-    const items = await loadEnrichedCart(user.id);
-    return {
-      success: true,
-      items,
-      redirectUrl: loginResult.redirectUrl,
-    };
-  }
-
-  // Case 2: Local items + no DB cart -> Save local to DB
-  if (!loginResult.hasDbCart) {
-    await db.cartItem.createMany({
-      data: localCartItems.map((item) => ({
-        userId: user.id,
-        productId: item.productId,
-        quantity: item.quantity,
-      })),
+  try {
+    const email = formData.get("email") as string;
+    const user = await db.user.findUnique({
+      where: { email: email.trim().toLowerCase() },
+      select: { id: true },
     });
-    const items = await loadEnrichedCart(user.id);
+
+    if (!user) {
+      return { error: "User not found" };
+    }
+
+    const hasLocalItems = localCartItems.length > 0;
+
+    // Case 1: No local items -> Load from DB (or empty)
+    if (!hasLocalItems) {
+      const items = await loadEnrichedCart(user.id);
+      return {
+        success: true,
+        items,
+        redirectUrl: loginResult.redirectUrl,
+      };
+    }
+
+    // Case 2: Local items + no DB cart -> Save local to DB
+    if (!loginResult.hasDbCart) {
+      await db.cartItem.createMany({
+        data: localCartItems.map((item) => ({
+          userId: user.id,
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
+      });
+      const items = await loadEnrichedCart(user.id);
+      return {
+        success: true,
+        items,
+        redirectUrl: loginResult.redirectUrl,
+      };
+    }
+
+    // Case 3: Local items + DB cart -> Conflict, show merge modal
     return {
       success: true,
-      items,
+      items: [],
       redirectUrl: loginResult.redirectUrl,
+      dbCartItemCount: loginResult.dbCartItemCount,
+      error: "MERGE_NEEDED",
     };
+  } catch (error) {
+    Sentry.captureException(error);
+    console.error("LoginWithCart error:", error);
+    return { error: "Something went wrong. Please try again." };
   }
-
-  // Case 3: Local items + DB cart -> Conflict, show merge modal
-  return {
-    success: true,
-    items: [],
-    redirectUrl: loginResult.redirectUrl,
-    dbCartItemCount: loginResult.dbCartItemCount,
-    error: "MERGE_NEEDED",
-  };
 }
 
 async function loadEnrichedCart(userId: string): Promise<EnrichedCartItem[]> {

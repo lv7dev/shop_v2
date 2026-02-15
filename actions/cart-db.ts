@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import * as Sentry from "@sentry/nextjs";
 import type { CartDbItemInput } from "@/types/cart";
 
 export type EnrichedCartItem = {
@@ -56,6 +57,7 @@ export async function loadCartFromDB(): Promise<{
 
     return { success: true, items };
   } catch (error) {
+    Sentry.captureException(error);
     console.error("Error loading cart from DB:", error);
     return { success: false, items: [] };
   }
@@ -83,6 +85,7 @@ export async function saveCartToDB(items: CartDbItemInput[]) {
 
     return { success: true };
   } catch (error) {
+    Sentry.captureException(error);
     console.error("Error saving cart to DB:", error);
     return { success: false };
   }
@@ -92,39 +95,57 @@ export async function syncCartItemToDB(productId: string, quantity: number) {
   const userId = await getAuthUserId();
   if (!userId) return { success: false };
 
-  if (quantity <= 0) {
-    await db.cartItem.deleteMany({
-      where: { userId, productId },
-    });
-  } else {
-    await db.cartItem.upsert({
-      where: { userId_productId: { userId, productId } },
-      update: { quantity },
-      create: { userId, productId, quantity },
-    });
-  }
+  try {
+    if (quantity <= 0) {
+      await db.cartItem.deleteMany({
+        where: { userId, productId },
+      });
+    } else {
+      await db.cartItem.upsert({
+        where: { userId_productId: { userId, productId } },
+        update: { quantity },
+        create: { userId, productId, quantity },
+      });
+    }
 
-  return { success: true };
+    return { success: true };
+  } catch (error) {
+    Sentry.captureException(error);
+    console.error("Error syncing cart item to DB:", error);
+    return { success: false };
+  }
 }
 
 export async function removeCartItemFromDB(productId: string) {
   const userId = await getAuthUserId();
   if (!userId) return { success: false };
 
-  await db.cartItem.deleteMany({
-    where: { userId, productId },
-  });
+  try {
+    await db.cartItem.deleteMany({
+      where: { userId, productId },
+    });
 
-  return { success: true };
+    return { success: true };
+  } catch (error) {
+    Sentry.captureException(error);
+    console.error("Error removing cart item from DB:", error);
+    return { success: false };
+  }
 }
 
 export async function clearCartDB() {
   const userId = await getAuthUserId();
   if (!userId) return { success: false };
 
-  await db.cartItem.deleteMany({ where: { userId } });
+  try {
+    await db.cartItem.deleteMany({ where: { userId } });
 
-  return { success: true };
+    return { success: true };
+  } catch (error) {
+    Sentry.captureException(error);
+    console.error("Error clearing cart DB:", error);
+    return { success: false };
+  }
 }
 
 export async function mergeCartsInDB(localItems: CartDbItemInput[]) {
@@ -168,6 +189,7 @@ export async function mergeCartsInDB(localItems: CartDbItemInput[]) {
 
     return { success: true };
   } catch (error) {
+    Sentry.captureException(error);
     console.error("mergeCartsInDB error:", error);
     return { success: false };
   }
