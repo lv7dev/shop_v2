@@ -10,6 +10,7 @@ function isPublic(pathname: string) {
   if (pathname.startsWith("/categories/")) return true;
   if (pathname.startsWith("/_next")) return true;
   if (pathname.startsWith("/api")) return true;
+  if (pathname.startsWith("/monitoring")) return true; // Sentry tunnel route
   if (pathname.includes(".")) return true; // static files
   return false;
 }
