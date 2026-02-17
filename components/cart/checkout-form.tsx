@@ -79,6 +79,7 @@ export function CheckoutForm() {
       const cartItems = items.map((item) => ({
         id: item.id,
         quantity: item.quantity,
+        variantId: item.variantId,
       }));
 
       const result = await createOrder(cartItems, undefined, note || undefined);
@@ -204,8 +205,8 @@ export function CheckoutForm() {
           </h2>
 
           <div className="mb-4 max-h-64 space-y-3 overflow-y-auto">
-            {items.map((item) => (
-              <div key={item.id} className="flex gap-3">
+            {items.map((item, index) => (
+              <div key={`${item.id}-${item.variantId ?? index}`} className="flex gap-3">
                 <div className="relative size-14 shrink-0 overflow-hidden rounded bg-muted">
                   {item.image ? (
                     <Image
@@ -223,6 +224,9 @@ export function CheckoutForm() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium line-clamp-1">{item.name}</p>
+                  {item.variantLabel && (
+                    <p className="text-xs text-muted-foreground">{item.variantLabel}</p>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     {item.quantity} x ${item.price.toFixed(2)}
                   </p>

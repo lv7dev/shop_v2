@@ -20,6 +20,7 @@ export function RegisterForm() {
     const localCartItems = items.map((item) => ({
       productId: item.id,
       quantity: item.quantity,
+      variantId: item.variantId ?? null,
     }));
 
     const result = await register(formData, localCartItems);

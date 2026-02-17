@@ -1,6 +1,7 @@
 export type CartItemInput = {
   id: string;
   quantity: number;
+  variantId?: string;
 };
 
 export type CartItemWithPrice = CartItemInput & {
@@ -10,4 +11,5 @@ export type CartItemWithPrice = CartItemInput & {
 export type CartDbItemInput = {
   productId: string;
   quantity: number;
+  variantId?: string | null;
 };

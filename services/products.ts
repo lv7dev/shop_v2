@@ -3,18 +3,36 @@ import { db } from "@/lib/db";
 export async function getProducts({
   categorySlug,
   search,
+  facets,
   page = 1,
   limit = 12,
 }: {
   categorySlug?: string;
   search?: string;
+  facets?: Record<string, string[]>;
   page?: number;
   limit?: number;
 } = {}) {
+  // Build facet AND conditions: each facet key is ANDed, values within are ORed
+  const facetConditions =
+    facets && Object.keys(facets).length > 0
+      ? Object.entries(facets).map(([facetSlug, valueSlugs]) => ({
+          facetValues: {
+            some: {
+              facetValue: {
+                facet: { slug: facetSlug },
+                slug: { in: valueSlugs },
+              },
+            },
+          },
+        }))
+      : [];
+
   const where = {
     isActive: true,
     ...(categorySlug && { category: { slug: categorySlug } }),
     ...(search && { name: { contains: search, mode: "insensitive" as const } }),
+    ...(facetConditions.length > 0 && { AND: facetConditions }),
   };
 
   const [products, total] = await Promise.all([
@@ -42,6 +60,25 @@ export async function getProductBySlug(slug: string) {
     include: {
       category: true,
       reviews: { include: { user: { select: { name: true, image: true } } } },
+      facetValues: {
+        include: {
+          facetValue: {
+            include: { facet: true },
+          },
+        },
+      },
+      variants: {
+        include: {
+          options: {
+            include: {
+              facetValue: {
+                include: { facet: true },
+              },
+            },
+          },
+        },
+        orderBy: { id: "asc" },
+      },
     },
   });
 }

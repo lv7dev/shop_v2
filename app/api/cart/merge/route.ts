@@ -26,22 +26,40 @@ export async function POST(req: NextRequest) {
         where: { userId },
       });
 
-      const mergedMap = new Map<string, number>();
+      // Key: productId or productId::variantId
+      const mergedMap = new Map<
+        string,
+        { productId: string; variantId: string | null; quantity: number }
+      >();
+
       for (const item of existingItems) {
-        mergedMap.set(item.productId, item.quantity);
+        const key = item.variantId
+          ? `${item.productId}::${item.variantId}`
+          : item.productId;
+        mergedMap.set(key, {
+          productId: item.productId,
+          variantId: item.variantId,
+          quantity: item.quantity,
+        });
       }
       for (const item of localCartItems) {
-        const existing = mergedMap.get(item.productId) || 0;
-        mergedMap.set(item.productId, existing + item.quantity);
+        const key = item.variantId
+          ? `${item.productId}::${item.variantId}`
+          : item.productId;
+        const existing = mergedMap.get(key);
+        mergedMap.set(key, {
+          productId: item.productId,
+          variantId: item.variantId ?? null,
+          quantity: (existing?.quantity || 0) + item.quantity,
+        });
       }
 
-      const mergedData = Array.from(mergedMap.entries()).map(
-        ([productId, quantity]) => ({
-          userId,
-          productId,
-          quantity,
-        }),
-      );
+      const mergedData = Array.from(mergedMap.values()).map((entry) => ({
+        userId,
+        productId: entry.productId,
+        variantId: entry.variantId,
+        quantity: entry.quantity,
+      }));
 
       if (mergedData.length > 0) {
         await db.$transaction([
@@ -65,19 +83,47 @@ export async function POST(req: NextRequest) {
             isActive: true,
           },
         },
+        variant: {
+          include: {
+            options: {
+              include: {
+                facetValue: {
+                  include: { facet: true },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
     const items = cartItems
       .filter((item) => item.product.isActive)
-      .map((item) => ({
-        id: item.product.id,
-        name: item.product.name,
-        price: Number(item.product.price),
-        image: item.product.images[0] ?? "",
-        quantity: Math.min(item.quantity, item.product.stock),
-        stock: item.product.stock,
-      }));
+      .map((item) => {
+        const variant = item.variant;
+        const variantLabel = variant
+          ? variant.options
+              .map(
+                (o) => `${o.facetValue.facet.name}: ${o.facetValue.value}`,
+              )
+              .join(" / ")
+          : undefined;
+        const effectivePrice = variant
+          ? Number(variant.price)
+          : Number(item.product.price);
+        const effectiveStock = variant ? variant.stock : item.product.stock;
+
+        return {
+          id: item.product.id,
+          variantId: item.variantId ?? undefined,
+          name: item.product.name,
+          variantLabel,
+          price: effectivePrice,
+          image: item.product.images[0] ?? "",
+          quantity: Math.min(item.quantity, effectiveStock),
+          stock: effectiveStock,
+        };
+      });
 
     return NextResponse.json({ success: true, items });
   } catch (error) {

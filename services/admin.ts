@@ -39,6 +39,34 @@ export async function getAdminProducts() {
   });
 }
 
+export async function getAdminProductById(id: string) {
+  return db.product.findUnique({
+    where: { id },
+    include: {
+      category: true,
+      facetValues: {
+        include: {
+          facetValue: {
+            include: { facet: true },
+          },
+        },
+      },
+      variants: {
+        include: {
+          options: {
+            include: {
+              facetValue: {
+                include: { facet: true },
+              },
+            },
+          },
+        },
+        orderBy: { id: "asc" },
+      },
+    },
+  });
+}
+
 export async function getAdminOrders() {
   return db.order.findMany({
     include: {

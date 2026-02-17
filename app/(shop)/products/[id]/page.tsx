@@ -5,6 +5,7 @@ import { ChevronRight, Star, Package, Truck, ShieldCheck } from "lucide-react";
 import { getProductBySlug, getRelatedProducts } from "@/services/products";
 import { ProductImageGallery } from "@/components/products/product-image-gallery";
 import { AddToCartButton } from "@/components/products/add-to-cart-button";
+import { VariantPicker } from "@/components/products/variant-picker";
 import { ProductCard } from "@/components/products/product-card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -18,9 +19,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const product = await getProductBySlug(id);
   if (!product) return { title: "Product Not Found" };
+
+  // Build description with facet values for SEO
+  const facetParts = product.facetValues
+    ?.map((pfv) => `${pfv.facetValue.facet.name}: ${pfv.facetValue.value}`)
+    .join(", ");
+  const desc = [product.description, facetParts].filter(Boolean).join(" | ");
+
   return {
     title: product.name,
-    description: product.description ?? undefined,
+    description: desc || undefined,
   };
 }
 
@@ -50,8 +58,102 @@ export default async function ProductDetailPage({ params }: Props) {
         product.reviews.length
       : 0;
 
+  // Group facet values by facet name
+  const facetGroups: Record<string, string[]> = {};
+  if (product.facetValues) {
+    for (const pfv of product.facetValues) {
+      const facetName = pfv.facetValue.facet.name;
+      if (!facetGroups[facetName]) facetGroups[facetName] = [];
+      facetGroups[facetName].push(pfv.facetValue.value);
+    }
+  }
+
+  // Prepare variants data for client component
+  const hasVariants = product.variants && product.variants.length > 0;
+  const variantsData = hasVariants
+    ? product.variants.map((v) => ({
+        id: v.id,
+        sku: v.sku,
+        price: Number(v.price),
+        stock: v.stock,
+        options: v.options.map((o) => ({
+          facetId: o.facetValue.facet.id,
+          facetName: o.facetValue.facet.name,
+          facetValueId: o.facetValue.id,
+          facetValue: o.facetValue.value,
+        })),
+      }))
+    : [];
+
+  // For products with variants, show price range
+  const priceRange = hasVariants
+    ? {
+        min: Math.min(...variantsData.map((v) => v.price)),
+        max: Math.max(...variantsData.map((v) => v.price)),
+      }
+    : null;
+
+  // Total stock across variants
+  const totalVariantStock = hasVariants
+    ? variantsData.reduce((sum, v) => sum + v.stock, 0)
+    : product.stock;
+
+  // JSON-LD structured data
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    image: product.images,
+    sku: product.sku,
+    category: product.category?.name,
+    offers: hasVariants
+      ? {
+          "@type": "AggregateOffer",
+          lowPrice: priceRange!.min,
+          highPrice: priceRange!.max,
+          priceCurrency: "USD",
+          offerCount: variantsData.length,
+          availability:
+            totalVariantStock > 0
+              ? "https://schema.org/InStock"
+              : "https://schema.org/OutOfStock",
+        }
+      : {
+          "@type": "Offer",
+          price: price,
+          priceCurrency: "USD",
+          availability:
+            product.stock > 0
+              ? "https://schema.org/InStock"
+              : "https://schema.org/OutOfStock",
+        },
+    ...(product.reviews &&
+      product.reviews.length > 0 && {
+        aggregateRating: {
+          "@type": "AggregateRating",
+          ratingValue: avgRating.toFixed(1),
+          reviewCount: product.reviews.length,
+        },
+      }),
+    // Include facet values as additionalProperty for SEO
+    ...(Object.keys(facetGroups).length > 0 && {
+      additionalProperty: Object.entries(facetGroups).map(([name, values]) => ({
+        "@type": "PropertyValue",
+        name,
+        value: values.join(", "),
+      })),
+    }),
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
+      {/* JSON-LD structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* Breadcrumbs */}
       <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground transition-colors">
@@ -127,13 +229,27 @@ export default async function ProductDetailPage({ params }: Props) {
 
           {/* Price */}
           <div className="flex items-baseline gap-3">
-            <span className="text-3xl font-bold">{formatPrice(price)}</span>
-            {comparePrice && comparePrice > price && (
-              <>
-                <span className="text-lg text-muted-foreground line-through">
-                  {formatPrice(comparePrice)}
+            {hasVariants && priceRange ? (
+              priceRange.min === priceRange.max ? (
+                <span className="text-3xl font-bold">
+                  {formatPrice(priceRange.min)}
                 </span>
-                <Badge variant="destructive">-{discount}%</Badge>
+              ) : (
+                <span className="text-3xl font-bold">
+                  {formatPrice(priceRange.min)} – {formatPrice(priceRange.max)}
+                </span>
+              )
+            ) : (
+              <>
+                <span className="text-3xl font-bold">{formatPrice(price)}</span>
+                {comparePrice && comparePrice > price && (
+                  <>
+                    <span className="text-lg text-muted-foreground line-through">
+                      {formatPrice(comparePrice)}
+                    </span>
+                    <Badge variant="destructive">-{discount}%</Badge>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -145,49 +261,85 @@ export default async function ProductDetailPage({ params }: Props) {
             </p>
           )}
 
-          {/* Stock */}
-          <div className="flex items-center gap-2 text-sm">
-            {product.stock > 0 ? (
-              <>
-                <span className="size-2 rounded-full bg-green-500" />
-                <span className="text-green-600 dark:text-green-400">
-                  In Stock
-                </span>
-                <span className="text-muted-foreground">
-                  ({product.stock} available)
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="size-2 rounded-full bg-red-500" />
-                <span className="text-red-600 dark:text-red-400">
-                  Out of Stock
-                </span>
-              </>
-            )}
-          </div>
-
-          {/* SKU */}
-          {product.sku && (
-            <p className="text-sm text-muted-foreground">
-              SKU: <span className="font-mono">{product.sku}</span>
-            </p>
+          {/* Facet attributes (only show non-variant facets or when no variants) */}
+          {!hasVariants && Object.keys(facetGroups).length > 0 && (
+            <div className="space-y-3">
+              {Object.entries(facetGroups).map(([facetName, values]) => (
+                <div key={facetName} className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{facetName}:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {values.map((v) => (
+                      <Badge key={v} variant="outline">
+                        {v}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
 
-          <Separator />
+          {/* Variant picker or stock display + add to cart */}
+          {hasVariants ? (
+            <>
+              <Separator />
+              <VariantPicker
+                product={{
+                  id: product.id,
+                  name: product.name,
+                  price,
+                  image: product.images[0] ?? "",
+                }}
+                variants={variantsData}
+              />
+            </>
+          ) : (
+            <>
+              {/* Stock */}
+              <div className="flex items-center gap-2 text-sm">
+                {product.stock > 0 ? (
+                  <>
+                    <span className="size-2 rounded-full bg-green-500" />
+                    <span className="text-green-600 dark:text-green-400">
+                      In Stock
+                    </span>
+                    <span className="text-muted-foreground">
+                      ({product.stock} available)
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="size-2 rounded-full bg-red-500" />
+                    <span className="text-red-600 dark:text-red-400">
+                      Out of Stock
+                    </span>
+                  </>
+                )}
+              </div>
 
-          {/* Add to cart */}
-          <div className="max-w-xs">
-            <AddToCartButton
-              product={{
-                id: product.id,
-                name: product.name,
-                price,
-                image: product.images[0] ?? "",
-                stock: product.stock,
-              }}
-            />
-          </div>
+              {/* SKU */}
+              {product.sku && (
+                <p className="text-sm text-muted-foreground">
+                  SKU: <span className="font-mono">{product.sku}</span>
+                </p>
+              )}
+
+              <Separator />
+
+              {/* Add to cart */}
+              <div className="max-w-xs">
+                <AddToCartButton
+                  product={{
+                    id: product.id,
+                    name: product.name,
+                    price,
+                    image: product.images[0] ?? "",
+                    stock: product.stock,
+                  }}
+                />
+              </div>
+            </>
+          )}
 
           <Separator />
 

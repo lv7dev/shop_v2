@@ -8,21 +8,28 @@ import {
 } from "@/actions/cart-db";
 
 export type CartItem = {
-  id: string;
+  id: string; // productId
+  variantId?: string;
   name: string;
+  variantLabel?: string; // e.g. "Size: M / Color: Red"
   price: number;
   image: string;
   quantity: number;
   stock: number;
 };
 
+/** Unique key for a cart item: productId or productId::variantId */
+function cartItemKey(item: { id: string; variantId?: string }): string {
+  return item.variantId ? `${item.id}::${item.variantId}` : item.id;
+}
+
 type CartStore = {
   items: CartItem[];
   _hydrated: boolean;
   _isAuthenticated: boolean;
   addItem: (item: Omit<CartItem, "quantity">) => void;
-  removeItem: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
+  removeItem: (id: string, variantId?: string) => void;
+  updateQuantity: (id: string, quantity: number, variantId?: string) => void;
   clearCart: (syncToDb?: boolean) => void;
   replaceCart: (items: CartItem[]) => void;
   setAuthenticated: (value: boolean) => void;
@@ -43,7 +50,10 @@ export const useCartStore = create<CartStore>()(
 
       addItem: (item) =>
         set((state) => {
-          const existing = state.items.find((i) => i.id === item.id);
+          const key = cartItemKey(item);
+          const existing = state.items.find(
+            (i) => cartItemKey(i) === key
+          );
           let newQuantity: number;
 
           if (existing) {
@@ -54,45 +64,53 @@ export const useCartStore = create<CartStore>()(
 
           const newItems = existing
             ? state.items.map((i) =>
-                i.id === item.id ? { ...i, quantity: newQuantity } : i
+                cartItemKey(i) === key
+                  ? { ...i, quantity: newQuantity }
+                  : i
               )
             : [...state.items, { ...item, quantity: 1 }];
 
           if (state._isAuthenticated) {
-            syncCartItemToDB(item.id, newQuantity).catch(() => {
-              toast.error("Failed to sync cart. Please try again.");
-            });
+            syncCartItemToDB(item.id, newQuantity, item.variantId).catch(
+              () => {
+                toast.error("Failed to sync cart. Please try again.");
+              }
+            );
           }
 
           return { items: newItems };
         }),
 
-      removeItem: (id) =>
+      removeItem: (id, variantId) =>
         set((state) => {
+          const key = cartItemKey({ id, variantId });
           if (state._isAuthenticated) {
-            removeCartItemFromDB(id).catch(() => {
+            removeCartItemFromDB(id, variantId).catch(() => {
               toast.error("Failed to sync cart. Please try again.");
             });
           }
-          return { items: state.items.filter((i) => i.id !== id) };
+          return { items: state.items.filter((i) => cartItemKey(i) !== key) };
         }),
 
-      updateQuantity: (id, quantity) =>
+      updateQuantity: (id, quantity, variantId) =>
         set((state) => {
-          const item = state.items.find((i) => i.id === id);
+          const key = cartItemKey({ id, variantId });
+          const item = state.items.find((i) => cartItemKey(i) === key);
           if (!item) return state;
 
           const clampedQty = Math.max(1, Math.min(quantity, item.stock));
 
           if (state._isAuthenticated) {
-            syncCartItemToDB(id, clampedQty).catch(() => {
+            syncCartItemToDB(id, clampedQty, variantId).catch(() => {
               toast.error("Failed to sync cart. Please try again.");
             });
           }
 
           return {
             items: state.items.map((i) =>
-              i.id === id ? { ...i, quantity: clampedQty } : i
+              cartItemKey(i) === key
+                ? { ...i, quantity: clampedQty }
+                : i
             ),
           };
         }),

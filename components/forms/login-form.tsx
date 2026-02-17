@@ -35,6 +35,7 @@ export function LoginForm() {
     const localCartItems: CartDbItemInput[] = items.map((item) => ({
       productId: item.id,
       quantity: item.quantity,
+      variantId: item.variantId ?? null,
     }));
 
     const result = await loginWithCart(formData, localCartItems);

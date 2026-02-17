@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MoreHorizontal, Eye, EyeOff, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { MoreHorizontal, Eye, EyeOff, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,6 +58,12 @@ export function AdminProductActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <DropdownMenuItem asChild>
+          <Link href={`/dashboard/products/${productId}/edit`}>
+            <Pencil className="mr-2 size-4" />
+            Edit
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={handleToggleActive}>
           {isActive ? (
             <>

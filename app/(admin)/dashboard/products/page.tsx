@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Package } from "lucide-react";
+import Link from "next/link";
+import { Package, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -24,10 +26,18 @@ export default async function AdminProductsPage() {
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Products</h1>
-        <span className="text-sm text-muted-foreground">
-          {products.length} {products.length === 1 ? "product" : "products"}
-        </span>
+        <div>
+          <h1 className="text-3xl font-bold">Products</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {products.length} {products.length === 1 ? "product" : "products"}
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/dashboard/products/new" className="gap-2">
+            <Plus className="size-4" />
+            Add Product
+          </Link>
+        </Button>
       </div>
 
       <div className="rounded-lg border">

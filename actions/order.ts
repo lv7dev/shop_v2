@@ -44,30 +44,71 @@ export async function createOrder(
       where: { id: { in: productIds }, isActive: true },
     });
 
+    // Fetch variants if any items have variantId
+    const variantIds = items
+      .filter((item) => item.variantId)
+      .map((item) => item.variantId!);
+    const variants =
+      variantIds.length > 0
+        ? await db.productVariant.findMany({
+            where: { id: { in: variantIds } },
+          })
+        : [];
+
     // Validate all products exist and are active
-    if (products.length !== items.length) {
+    const uniqueProductIds = new Set(items.map((i) => i.id));
+    if (products.length !== uniqueProductIds.size) {
       return { success: false, error: "Some products are no longer available" };
     }
 
-    // Validate stock
+    // Validate stock (variant-aware)
     for (const item of items) {
       const product = products.find((p) => p.id === item.id);
       if (!product) {
         return { success: false, error: `Product not found: ${item.id}` };
       }
-      if (product.stock < item.quantity) {
-        return {
-          success: false,
-          error: `Insufficient stock for "${product.name}". Available: ${product.stock}`,
-        };
+
+      if (item.variantId) {
+        const variant = variants.find((v) => v.id === item.variantId);
+        if (!variant) {
+          return {
+            success: false,
+            error: `Variant not found for "${product.name}"`,
+          };
+        }
+        if (variant.stock < item.quantity) {
+          return {
+            success: false,
+            error: `Insufficient stock for "${product.name}" variant. Available: ${variant.stock}`,
+          };
+        }
+      } else {
+        if (product.stock < item.quantity) {
+          return {
+            success: false,
+            error: `Insufficient stock for "${product.name}". Available: ${product.stock}`,
+          };
+        }
       }
     }
 
     // Calculate totals from DB prices (not client prices)
     const orderItems = items.map((item) => {
       const product = products.find((p) => p.id === item.id)!;
+
+      if (item.variantId) {
+        const variant = variants.find((v) => v.id === item.variantId)!;
+        return {
+          productId: product.id,
+          variantId: item.variantId,
+          quantity: item.quantity,
+          price: variant.price,
+        };
+      }
+
       return {
         productId: product.id,
+        variantId: null,
         quantity: item.quantity,
         price: product.price,
       };
@@ -83,12 +124,19 @@ export async function createOrder(
 
     // Create order and decrement stock in a transaction
     const order = await db.$transaction(async (tx) => {
-      // Decrement stock for each product
+      // Decrement stock for each item
       for (const item of items) {
-        await tx.product.update({
-          where: { id: item.id },
-          data: { stock: { decrement: item.quantity } },
-        });
+        if (item.variantId) {
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        } else {
+          await tx.product.update({
+            where: { id: item.id },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
       }
 
       return tx.order.create({
@@ -100,7 +148,14 @@ export async function createOrder(
           tax,
           total,
           note,
-          items: { create: orderItems },
+          items: {
+            create: orderItems.map((oi) => ({
+              productId: oi.productId,
+              variantId: oi.variantId,
+              quantity: oi.quantity,
+              price: oi.price,
+            })),
+          },
         },
         include: { items: true },
       });
@@ -171,10 +226,17 @@ export async function cancelOrder(orderId: string) {
       });
 
       for (const item of order.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { increment: item.quantity } },
-        });
+        if (item.variantId) {
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: { stock: { increment: item.quantity } },
+          });
+        } else {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
       }
     });
 

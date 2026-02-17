@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "NODE_OPTIONS='--no-deprecation' next dev",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
@@ -35,7 +35,7 @@
     "zustand": "^5.0.11"
   },
   "prisma": {
-    "seed": "npx tsx prisma/seed.ts"
+    "seed": "node --no-deprecation node_modules/.bin/tsx prisma/seed.ts"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

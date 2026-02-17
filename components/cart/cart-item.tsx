@@ -36,6 +36,11 @@ export function CartItem({ item }: { item: CartItemType }) {
           >
             {item.name}
           </Link>
+          {item.variantLabel && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {item.variantLabel}
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             ${item.price.toFixed(2)} each
           </p>
@@ -47,7 +52,9 @@ export function CartItem({ item }: { item: CartItemType }) {
               variant="outline"
               size="icon"
               className="size-8"
-              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+              onClick={() =>
+                updateQuantity(item.id, item.quantity - 1, item.variantId)
+              }
               disabled={item.quantity <= 1}
             >
               <Minus className="size-3" />
@@ -59,7 +66,9 @@ export function CartItem({ item }: { item: CartItemType }) {
               variant="outline"
               size="icon"
               className="size-8"
-              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+              onClick={() =>
+                updateQuantity(item.id, item.quantity + 1, item.variantId)
+              }
               disabled={item.quantity >= item.stock}
             >
               <Plus className="size-3" />
@@ -74,7 +83,7 @@ export function CartItem({ item }: { item: CartItemType }) {
               variant="ghost"
               size="icon"
               className="size-8 text-muted-foreground hover:text-destructive"
-              onClick={() => removeItem(item.id)}
+              onClick={() => removeItem(item.id, item.variantId)}
             >
               <Trash2 className="size-4" />
             </Button>

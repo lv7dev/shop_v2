@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Sheet,
   SheetContent,
@@ -20,17 +21,46 @@ type Category = {
   children?: Category[];
 };
 
-type ProductFiltersProps = {
-  categories: Category[];
+type FacetValue = {
+  id: string;
+  value: string;
+  slug: string;
+  count: number;
 };
 
-export function ProductFilters({ categories }: ProductFiltersProps) {
+type Facet = {
+  id: string;
+  name: string;
+  slug: string;
+  values: FacetValue[];
+};
+
+type ProductFiltersProps = {
+  categories: Category[];
+  facets?: Facet[];
+};
+
+const RESERVED_PARAMS = new Set(["category", "search", "page"]);
+
+export function ProductFilters({ categories, facets = [] }: ProductFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category") ?? "";
   const search = searchParams.get("search") ?? "";
   const formRef = useRef<HTMLFormElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Get active facet values from URL
+  function getActiveFacetValues(facetSlug: string): Set<string> {
+    const param = searchParams.get(facetSlug);
+    return param ? new Set(param.split(",")) : new Set();
+  }
+
+  // Count active filters
+  const activeFilterCount =
+    (activeCategory ? 1 : 0) +
+    (search ? 1 : 0) +
+    facets.reduce((acc, f) => acc + getActiveFacetValues(f.slug).size, 0);
 
   function navigate(params: Record<string, string | null>) {
     const next = new URLSearchParams(searchParams.toString());
@@ -59,6 +89,22 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
     if (formRef.current) {
       formRef.current.reset();
     }
+  }
+
+  function toggleFacetValue(facetSlug: string, valueSlug: string) {
+    const active = getActiveFacetValues(facetSlug);
+    if (active.has(valueSlug)) {
+      active.delete(valueSlug);
+    } else {
+      active.add(valueSlug);
+    }
+    const value = active.size > 0 ? Array.from(active).join(",") : null;
+    navigate({ [facetSlug]: value });
+  }
+
+  function clearAllFilters() {
+    router.push("/products");
+    setMobileOpen(false);
   }
 
   const filterContent = (
@@ -140,6 +186,49 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
           ))}
         </ul>
       </div>
+
+      {/* Facet filters */}
+      {facets.map((facet) => {
+        const activeValues = getActiveFacetValues(facet.slug);
+        return (
+          <div key={facet.id}>
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              {facet.name}
+            </h3>
+            <div className="space-y-2">
+              {facet.values.map((val) => (
+                <label
+                  key={val.id}
+                  className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-accent"
+                >
+                  <Checkbox
+                    checked={activeValues.has(val.slug)}
+                    onCheckedChange={() =>
+                      toggleFacetValue(facet.slug, val.slug)
+                    }
+                  />
+                  <span className="flex-1">{val.value}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({val.count})
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Clear all */}
+      {activeFilterCount > 0 && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={clearAllFilters}
+        >
+          Clear all filters
+        </Button>
+      )}
     </div>
   );
 
@@ -152,9 +241,9 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
             <Button variant="outline" size="sm" className="gap-2">
               <SlidersHorizontal className="size-4" />
               Filters
-              {(activeCategory || search) && (
+              {activeFilterCount > 0 && (
                 <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                  {(activeCategory ? 1 : 0) + (search ? 1 : 0)}
+                  {activeFilterCount}
                 </span>
               )}
             </Button>

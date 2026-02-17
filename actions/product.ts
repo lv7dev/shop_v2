@@ -16,6 +16,7 @@ type ProductInput = {
   attributes?: Record<string, string>;
   isActive?: boolean;
   categoryId?: string;
+  facetValueIds?: string[];
 };
 
 function serializeProduct(product: Record<string, unknown>) {
@@ -45,24 +46,37 @@ export async function createProduct(data: ProductInput) {
     }
   }
 
-  const product = await db.product.create({
-    data: {
-      name: data.name,
-      slug,
-      description: data.description || null,
-      price: data.price,
-      comparePrice: data.comparePrice ?? null,
-      sku: data.sku || null,
-      stock: data.stock,
-      images: data.images,
-      attributes: data.attributes ?? undefined,
-      isActive: data.isActive ?? true,
-      categoryId: data.categoryId || null,
-    },
+  const product = await db.$transaction(async (tx) => {
+    const p = await tx.product.create({
+      data: {
+        name: data.name,
+        slug,
+        description: data.description || null,
+        price: data.price,
+        comparePrice: data.comparePrice ?? null,
+        sku: data.sku || null,
+        stock: data.stock,
+        images: data.images,
+        attributes: data.attributes ?? undefined,
+        isActive: data.isActive ?? true,
+        categoryId: data.categoryId || null,
+      },
+    });
+
+    if (data.facetValueIds && data.facetValueIds.length > 0) {
+      await tx.productFacetValue.createMany({
+        data: data.facetValueIds.map((fvId) => ({
+          productId: p.id,
+          facetValueId: fvId,
+        })),
+      });
+    }
+
+    return p;
   });
 
   revalidatePath("/products");
-  revalidatePath("/admin/products");
+  revalidatePath("/dashboard/products");
 
   return { success: true, product: serializeProduct(product) };
 }
@@ -111,14 +125,32 @@ export async function updateProduct(id: string, data: Partial<ProductInput>) {
   if (data.isActive !== undefined) updateData.isActive = data.isActive;
   if (data.categoryId !== undefined) updateData.categoryId = data.categoryId || null;
 
-  const updated = await db.product.update({
-    where: { id },
-    data: updateData,
+  const updated = await db.$transaction(async (tx) => {
+    const p = await tx.product.update({
+      where: { id },
+      data: updateData,
+    });
+
+    if (data.facetValueIds !== undefined) {
+      await tx.productFacetValue.deleteMany({
+        where: { productId: id },
+      });
+      if (data.facetValueIds.length > 0) {
+        await tx.productFacetValue.createMany({
+          data: data.facetValueIds.map((fvId) => ({
+            productId: id,
+            facetValueId: fvId,
+          })),
+        });
+      }
+    }
+
+    return p;
   });
 
   revalidatePath("/products");
   revalidatePath(`/products/${updated.slug}`);
-  revalidatePath("/admin/products");
+  revalidatePath("/dashboard/products");
 
   return { success: true, product: serializeProduct(updated) };
 }

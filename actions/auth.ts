@@ -73,6 +73,7 @@ export async function register(
         data: localCartItems.map((item) => ({
           userId: user.id,
           productId: item.productId,
+          variantId: item.variantId ?? null,
           quantity: item.quantity,
         })),
       });
@@ -179,6 +180,7 @@ export async function loginWithCart(
         data: localCartItems.map((item) => ({
           userId: user.id,
           productId: item.productId,
+          variantId: item.variantId ?? null,
           quantity: item.quantity,
         })),
       });
@@ -219,19 +221,45 @@ async function loadEnrichedCart(userId: string): Promise<EnrichedCartItem[]> {
           isActive: true,
         },
       },
+      variant: {
+        include: {
+          options: {
+            include: {
+              facetValue: {
+                include: { facet: true },
+              },
+            },
+          },
+        },
+      },
     },
   });
 
   return cartItems
     .filter((item) => item.product.isActive)
-    .map((item) => ({
-      id: item.product.id,
-      name: item.product.name,
-      price: Number(item.product.price),
-      image: item.product.images[0] ?? "",
-      quantity: Math.min(item.quantity, item.product.stock),
-      stock: item.product.stock,
-    }));
+    .map((item) => {
+      const variant = item.variant;
+      const variantLabel = variant
+        ? variant.options
+            .map((o) => `${o.facetValue.facet.name}: ${o.facetValue.value}`)
+            .join(" / ")
+        : undefined;
+      const effectivePrice = variant
+        ? Number(variant.price)
+        : Number(item.product.price);
+      const effectiveStock = variant ? variant.stock : item.product.stock;
+
+      return {
+        id: item.product.id,
+        variantId: item.variantId ?? undefined,
+        name: item.product.name,
+        variantLabel,
+        price: effectivePrice,
+        image: item.product.images[0] ?? "",
+        quantity: Math.min(item.quantity, effectiveStock),
+        stock: effectiveStock,
+      };
+    });
 }
 
 export async function logout() {
