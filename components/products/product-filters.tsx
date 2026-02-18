@@ -51,15 +51,6 @@ type ProductFiltersProps = {
   facets?: Facet[];
 };
 
-const RESERVED_PARAMS = new Set([
-  "category",
-  "search",
-  "page",
-  "minPrice",
-  "maxPrice",
-  "perPage",
-]);
-
 const FACET_ICONS: Record<string, React.ElementType> = {
   color: Palette,
   brand: Tag,

@@ -21,7 +21,7 @@ async function main() {
 
   // ── Users ──────────────────────────────────────
 
-  const admin = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: "admin@shop.com",
       name: "Admin",

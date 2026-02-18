@@ -16,24 +16,23 @@ type Product = {
 };
 
 export function RecentlyViewed() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<Product[] | null>(null);
 
   useEffect(() => {
     const slugs = getRecentlyViewedSlugs();
-    if (slugs.length === 0) {
-      setLoading(false);
-      return;
-    }
+    if (slugs.length === 0) return;
 
+    let cancelled = false;
     fetch(`/api/products/by-slugs?slugs=${slugs.join(",")}`)
       .then((res) => res.json())
-      .then((data) => setProducts(data.products ?? []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!cancelled) setProducts(data.products ?? []);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
-  if (loading || products.length === 0) return null;
+  if (!products || products.length === 0) return null;
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-16">
