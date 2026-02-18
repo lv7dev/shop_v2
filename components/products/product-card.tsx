@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ProductImage } from "@/components/ui/product-image";
 import { formatPrice } from "@/lib/utils";
 import { AddToCartButton } from "./add-to-cart-button";
 
@@ -39,7 +39,7 @@ export function ProductCard({
       <Link href={`/products/${slug}`} className="block">
         <div className="relative aspect-square overflow-hidden bg-muted">
           {images[0] ? (
-            <Image
+            <ProductImage
               src={images[0]}
               alt={name}
               fill

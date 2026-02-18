@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import { ShoppingCart } from "lucide-react";
+import { ProductImage } from "@/components/ui/product-image";
 import { cn } from "@/lib/utils";
 
 type ProductImageGalleryProps = {
@@ -25,7 +25,7 @@ export function ProductImageGallery({ images, name }: ProductImageGalleryProps) 
     <div className="space-y-4">
       {/* Main image */}
       <div className="relative aspect-square overflow-hidden rounded-lg border bg-muted">
-        <Image
+        <ProductImage
           src={images[selectedIndex]}
           alt={`${name} — image ${selectedIndex + 1}`}
           fill
@@ -49,7 +49,7 @@ export function ProductImageGallery({ images, name }: ProductImageGalleryProps) 
                   : "border-transparent hover:border-muted-foreground/40"
               )}
             >
-              <Image
+              <ProductImage
                 src={image}
                 alt={`${name} — thumbnail ${i + 1}`}
                 fill

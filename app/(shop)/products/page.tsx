@@ -6,7 +6,7 @@ import { getFilterableFacets } from "@/services/facets";
 import { ProductCard } from "@/components/products/product-card";
 import { ProductFilters } from "@/components/products/product-filters";
 import { Pagination } from "@/components/products/pagination";
-import { ITEMS_PER_PAGE } from "@/lib/constants";
+import { ITEMS_PER_PAGE, PER_PAGE_OPTIONS } from "@/lib/constants";
 import { Package } from "lucide-react";
 
 type Props = {
@@ -14,7 +14,7 @@ type Props = {
 };
 
 // Known non-facet params
-const RESERVED_PARAMS = new Set(["category", "search", "page"]);
+const RESERVED_PARAMS = new Set(["category", "search", "page", "minPrice", "maxPrice", "perPage"]);
 
 function parseFacetParams(
   params: Record<string, string | string[] | undefined>
@@ -56,14 +56,22 @@ export default async function ProductsPage({ searchParams }: Props) {
   const search = typeof params.search === "string" ? params.search : undefined;
   const facets = parseFacetParams(params);
 
+  const minPrice = typeof params.minPrice === "string" && params.minPrice ? Number(params.minPrice) : undefined;
+  const maxPrice = typeof params.maxPrice === "string" && params.maxPrice ? Number(params.maxPrice) : undefined;
+  const perPage = typeof params.perPage === "string" && PER_PAGE_OPTIONS.includes(Number(params.perPage))
+    ? Number(params.perPage)
+    : ITEMS_PER_PAGE;
+
   const [{ products, totalPages, currentPage, total }, categories, filterableFacets] =
     await Promise.all([
       getProducts({
         categorySlug,
         search,
         facets: Object.keys(facets).length > 0 ? facets : undefined,
+        minPrice,
+        maxPrice,
         page,
-        limit: ITEMS_PER_PAGE,
+        limit: perPage,
       }),
       getCategories(),
       getFilterableFacets({ categorySlug, search, activeFacets: facets }),
@@ -73,6 +81,9 @@ export default async function ProductsPage({ searchParams }: Props) {
   const paginationParams: Record<string, string | undefined> = {
     category: categorySlug,
     search,
+    minPrice: minPrice !== undefined ? String(minPrice) : undefined,
+    maxPrice: maxPrice !== undefined ? String(maxPrice) : undefined,
+    perPage: perPage !== ITEMS_PER_PAGE ? String(perPage) : undefined,
   };
   for (const [key, values] of Object.entries(facets)) {
     paginationParams[key] = values.join(",");

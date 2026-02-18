@@ -1,6 +1,7 @@
 export const APP_NAME = "Shop V2";
 
 export const ITEMS_PER_PAGE = 12;
+export const PER_PAGE_OPTIONS = [12, 24, 48];
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
   PENDING: "Pending",

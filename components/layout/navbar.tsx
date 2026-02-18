@@ -2,9 +2,29 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ShoppingCart, Menu, User, LogOut, LayoutDashboard } from "lucide-react";
+import {
+  ShoppingCart,
+  Menu,
+  User,
+  LogOut,
+  LayoutDashboard,
+  Home,
+  Package,
+  Grid3X3,
+  UserCircle,
+  ClipboardList,
+  LogIn,
+  UserPlus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCartStore } from "@/store/cart-store";
-import { APP_NAME, NAV_LINKS } from "@/lib/constants";
+import { APP_NAME } from "@/lib/constants";
 import { logout } from "@/actions/auth";
 
 type NavbarProps = {
@@ -25,6 +45,12 @@ type NavbarProps = {
   } | null;
 };
 
+const NAV_ITEMS = [
+  { label: "Home", href: "/", icon: Home },
+  { label: "Products", href: "/products", icon: Package },
+  { label: "Categories", href: "/categories", icon: Grid3X3 },
+];
+
 export function Navbar({ user }: NavbarProps) {
   const hydrated = useCartStore((s) => s._hydrated);
   const totalItems = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
@@ -32,7 +58,7 @@ export function Navbar({ user }: NavbarProps) {
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   function handleLogout() {
-    clearCart(false); // Clear localStorage only, keep DB cart for next login
+    clearCart(false);
     logout();
   }
 
@@ -46,7 +72,7 @@ export function Navbar({ user }: NavbarProps) {
 
         {/* Desktop Nav */}
         <nav className="hidden items-center gap-6 md:flex">
-          {NAV_LINKS.map((link) => (
+          {NAV_ITEMS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -113,7 +139,7 @@ export function Navbar({ user }: NavbarProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
               <Link href="/login">Sign In</Link>
             </Button>
           )}
@@ -125,49 +151,127 @@ export function Navbar({ user }: NavbarProps) {
                 <Menu className="size-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72">
-              <nav className="mt-8 flex flex-col gap-4">
-                {NAV_LINKS.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="text-lg font-medium"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-                {user ? (
-                  <>
-                    <Link href="/account" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium">
-                      Account
-                    </Link>
-                    <Link href="/orders" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium">
-                      Orders
-                    </Link>
-                    {user.role === "ADMIN" && (
-                      <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium">
-                        Admin Dashboard
-                      </Link>
-                    )}
-                    <button
-                      onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
-                      className="text-left text-lg font-medium text-destructive"
-                    >
-                      Sign Out
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium">
-                      Sign In
-                    </Link>
-                    <Link href="/register" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium">
-                      Sign Up
-                    </Link>
-                  </>
+            <SheetContent side="right" className="w-80 p-0">
+              <SheetHeader className="border-b px-6 py-4">
+                <SheetTitle className="text-left text-lg">{APP_NAME}</SheetTitle>
+              </SheetHeader>
+
+              <div className="flex flex-1 flex-col overflow-y-auto">
+                {/* User info card */}
+                {user && (
+                  <div className="mx-4 mt-4 flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+                    <div className="flex size-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                      {(user.name || user.email).charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{user.name || "User"}</p>
+                      <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                    </div>
+                  </div>
                 )}
-              </nav>
+
+                {/* Navigation */}
+                <nav className="flex flex-col gap-1 p-4">
+                  <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Navigate
+                  </p>
+                  {NAV_ITEMS.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+                    >
+                      <link.icon className="size-4 text-muted-foreground" />
+                      {link.label}
+                    </Link>
+                  ))}
+                  <Link
+                    href="/cart"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+                  >
+                    <ShoppingCart className="size-4 text-muted-foreground" />
+                    Cart
+                    {hydrated && totalItems > 0 && (
+                      <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                        {totalItems}
+                      </span>
+                    )}
+                  </Link>
+                </nav>
+
+                <Separator className="mx-4" />
+
+                {/* Account section */}
+                <div className="flex flex-col gap-1 p-4">
+                  <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Account
+                  </p>
+                  {user ? (
+                    <>
+                      <Link
+                        href="/account"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+                      >
+                        <UserCircle className="size-4 text-muted-foreground" />
+                        My Account
+                      </Link>
+                      <Link
+                        href="/orders"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+                      >
+                        <ClipboardList className="size-4 text-muted-foreground" />
+                        My Orders
+                      </Link>
+                      {user.role === "ADMIN" && (
+                        <Link
+                          href="/dashboard"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+                        >
+                          <LayoutDashboard className="size-4 text-muted-foreground" />
+                          Admin Dashboard
+                        </Link>
+                      )}
+
+                      <Separator className="my-2" />
+
+                      <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          handleLogout();
+                        }}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+                      >
+                        <LogOut className="size-4" />
+                        Sign Out
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/login"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+                      >
+                        <LogIn className="size-4 text-muted-foreground" />
+                        Sign In
+                      </Link>
+                      <Link
+                        href="/register"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+                      >
+                        <UserPlus className="size-4 text-muted-foreground" />
+                        Sign Up
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </div>
             </SheetContent>
           </Sheet>
         </div>

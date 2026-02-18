@@ -4,12 +4,16 @@ export async function getProducts({
   categorySlug,
   search,
   facets,
+  minPrice,
+  maxPrice,
   page = 1,
   limit = 12,
 }: {
   categorySlug?: string;
   search?: string;
   facets?: Record<string, string[]>;
+  minPrice?: number;
+  maxPrice?: number;
   page?: number;
   limit?: number;
 } = {}) {
@@ -28,10 +32,15 @@ export async function getProducts({
         }))
       : [];
 
+  const priceFilter: Record<string, number> = {};
+  if (minPrice !== undefined) priceFilter.gte = minPrice;
+  if (maxPrice !== undefined) priceFilter.lte = maxPrice;
+
   const where = {
     isActive: true,
     ...(categorySlug && { category: { slug: categorySlug } }),
     ...(search && { name: { contains: search, mode: "insensitive" as const } }),
+    ...(Object.keys(priceFilter).length > 0 && { price: priceFilter }),
     ...(facetConditions.length > 0 && { AND: facetConditions }),
   };
 
@@ -88,6 +97,17 @@ export async function getProductById(id: string) {
     where: { id },
     include: { category: true },
   });
+}
+
+export async function getProductsByIds(ids: string[]) {
+  if (ids.length === 0) return [];
+  const products = await db.product.findMany({
+    where: { id: { in: ids }, isActive: true },
+    include: { category: true },
+  });
+  // Preserve the order of the input IDs
+  const productMap = new Map(products.map((p) => [p.id, p]));
+  return ids.map((id) => productMap.get(id)).filter(Boolean) as typeof products;
 }
 
 export async function getRelatedProducts(

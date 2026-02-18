@@ -10,6 +10,7 @@ import { ProductCard } from "@/components/products/product-card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { formatPrice } from "@/lib/utils";
+import { TrackRecentlyViewed } from "@/components/products/track-recently-viewed";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -148,6 +149,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
+      <TrackRecentlyViewed slug={product.slug} />
       {/* JSON-LD structured data */}
       <script
         type="application/ld+json"
