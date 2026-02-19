@@ -9,6 +9,7 @@ import {
   Tag,
   Layers,
   Palette,
+  Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ import {
   SheetTrigger,
   SheetFooter,
 } from "@/components/ui/sheet";
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 
 type Category = {
   id: string;
@@ -67,6 +68,7 @@ export function ProductFilters({
   const search = searchParams.get("search") ?? "";
   const formRef = useRef<HTMLFormElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const currentMinPrice = searchParams.get("minPrice") ?? "";
   const currentMaxPrice = searchParams.get("maxPrice") ?? "";
@@ -97,7 +99,9 @@ export function ProductFilters({
     }
     next.delete("page");
     const qs = next.toString();
-    router.push(qs ? `/products?${qs}` : "/products");
+    startTransition(() => {
+      router.push(qs ? `/products?${qs}` : "/products");
+    });
     setMobileOpen(false);
   }
 
@@ -143,7 +147,9 @@ export function ProductFilters({
   function clearAllFilters() {
     setMinPrice("");
     setMaxPrice("");
-    router.push("/products");
+    startTransition(() => {
+      router.push("/products");
+    });
     setMobileOpen(false);
   }
 
@@ -543,7 +549,11 @@ export function ProductFilters({
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2">
-              <SlidersHorizontal className="size-4" />
+              {isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <SlidersHorizontal className="size-4" />
+              )}
               Filters
               {activeFilterCount > 0 && (
                 <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
@@ -584,7 +594,15 @@ export function ProductFilters({
       </div>
 
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 lg:block">{filterContent}</aside>
+      <aside className="hidden w-64 shrink-0 lg:block">
+        {isPending && (
+          <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            <span>Updating results...</span>
+          </div>
+        )}
+        {filterContent}
+      </aside>
     </>
   );
 }

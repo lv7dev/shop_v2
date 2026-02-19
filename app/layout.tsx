@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { NavigationProgress } from "@/components/layout/navigation-progress";
 import { APP_NAME } from "@/lib/constants";
 import "./globals.css";
 
@@ -32,6 +34,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <Suspense>
+          <NavigationProgress />
+        </Suspense>
         {children}
         <Toaster />
       </body>

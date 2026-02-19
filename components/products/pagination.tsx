@@ -1,8 +1,9 @@
 "use client";
 
+import { useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -43,6 +44,7 @@ export function Pagination({
   const router = useRouter();
   const urlParams = useSearchParams();
   const currentPerPage = Number(urlParams.get("perPage")) || ITEMS_PER_PAGE;
+  const [isPending, startTransition] = useTransition();
 
   function handlePerPageChange(value: string) {
     const next = new URLSearchParams(urlParams.toString());
@@ -53,7 +55,16 @@ export function Pagination({
       next.set("perPage", value);
     }
     const qs = next.toString();
-    router.push(qs ? `${basePath}?${qs}` : basePath);
+    startTransition(() => {
+      router.push(qs ? `${basePath}?${qs}` : basePath);
+    });
+  }
+
+  function handlePageClick(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
+    e.preventDefault();
+    startTransition(() => {
+      router.push(href);
+    });
   }
 
   const pages: (number | "...")[] = [];
@@ -77,7 +88,7 @@ export function Pagination({
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <span>Show</span>
         <Select value={String(currentPerPage)} onValueChange={handlePerPageChange}>
-          <SelectTrigger className="h-8 w-[70px]">
+          <SelectTrigger className="h-8 w-[70px]" disabled={isPending}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -89,19 +100,35 @@ export function Pagination({
           </SelectContent>
         </Select>
         <span>per page</span>
+        {isPending && (
+          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+        )}
       </div>
 
       {/* Page navigation */}
       {totalPages > 1 && (
         <nav className="flex items-center gap-1">
-          <Button variant="outline" size="icon" asChild disabled={currentPage <= 1}>
-            <Link
-              href={buildHref(basePath, searchParams, currentPage - 1)}
-              aria-label="Previous page"
-              className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
-            >
-              <ChevronLeft className="size-4" />
-            </Link>
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={currentPage <= 1 || isPending}
+            asChild={currentPage > 1}
+          >
+            {currentPage > 1 ? (
+              <Link
+                href={buildHref(basePath, searchParams, currentPage - 1)}
+                aria-label="Previous page"
+                onClick={(e) =>
+                  handlePageClick(e, buildHref(basePath, searchParams, currentPage - 1))
+                }
+              >
+                <ChevronLeft className="size-4" />
+              </Link>
+            ) : (
+              <span>
+                <ChevronLeft className="size-4" />
+              </span>
+            )}
           </Button>
 
           {pages.map((p, i) =>
@@ -114,9 +141,17 @@ export function Pagination({
                 key={p}
                 variant={p === currentPage ? "default" : "outline"}
                 size="icon"
+                disabled={isPending}
                 asChild
               >
-                <Link href={buildHref(basePath, searchParams, p)}>{p}</Link>
+                <Link
+                  href={buildHref(basePath, searchParams, p)}
+                  onClick={(e) =>
+                    handlePageClick(e, buildHref(basePath, searchParams, p))
+                  }
+                >
+                  {p}
+                </Link>
               </Button>
             )
           )}
@@ -124,18 +159,27 @@ export function Pagination({
           <Button
             variant="outline"
             size="icon"
-            asChild
-            disabled={currentPage >= totalPages}
+            disabled={currentPage >= totalPages || isPending}
+            asChild={currentPage < totalPages}
           >
-            <Link
-              href={buildHref(basePath, searchParams, currentPage + 1)}
-              aria-label="Next page"
-              className={
-                currentPage >= totalPages ? "pointer-events-none opacity-50" : ""
-              }
-            >
-              <ChevronRight className="size-4" />
-            </Link>
+            {currentPage < totalPages ? (
+              <Link
+                href={buildHref(basePath, searchParams, currentPage + 1)}
+                aria-label="Next page"
+                onClick={(e) =>
+                  handlePageClick(
+                    e,
+                    buildHref(basePath, searchParams, currentPage + 1)
+                  )
+                }
+              >
+                <ChevronRight className="size-4" />
+              </Link>
+            ) : (
+              <span>
+                <ChevronRight className="size-4" />
+              </span>
+            )}
           </Button>
         </nav>
       )}
