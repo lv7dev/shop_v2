@@ -12,18 +12,18 @@ import * as Sentry from "@sentry/nextjs";
 import type { CartDbItemInput } from "@/types/cart";
 import type { EnrichedCartItem } from "@/actions/cart-db";
 
-type AuthSuccess = {
+export type AuthSuccess = {
   success: true;
   hasDbCart: boolean;
   dbCartItemCount: number;
   redirectUrl: string;
 };
 
-type AuthError = {
+export type AuthError = {
   error: string;
 };
 
-type AuthResult = AuthSuccess | AuthError;
+export type AuthResult = AuthSuccess | AuthError;
 
 type CartMergeResult = {
   success: boolean;
@@ -50,41 +50,17 @@ export async function register(
   }
 
   try {
-    const existing = await db.user.findUnique({ where: { email } });
+    const existing = await db.user.findUnique({ where: { email: email.trim().toLowerCase() } });
     if (existing) {
+      if (existing.authProvider !== "EMAIL") {
+        const provider = existing.authProvider === "GOOGLE" ? "Google" : "Facebook";
+        return { error: `This email is linked to ${provider}. Please sign in with ${provider}.` };
+      }
       return { error: "Email already registered" };
     }
 
     const hashed = await hashPassword(password);
-
-    const user = await db.user.create({
-      data: {
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        password: hashed,
-      },
-    });
-
-    await createSession({ userId: user.id, role: user.role });
-
-    // Save local cart to DB in the same server action (avoids separate call after cookie set)
-    if (localCartItems && localCartItems.length > 0) {
-      await db.cartItem.createMany({
-        data: localCartItems.map((item) => ({
-          userId: user.id,
-          productId: item.productId,
-          variantId: item.variantId ?? null,
-          quantity: item.quantity,
-        })),
-      });
-    }
-
-    return {
-      success: true,
-      hasDbCart: false,
-      dbCartItemCount: 0,
-      redirectUrl: "/",
-    };
+    return await createUserAndSession(name, email, hashed, localCartItems);
   } catch (error) {
     Sentry.captureException(error);
     console.error("Register error:", error);
@@ -106,7 +82,16 @@ export async function login(formData: FormData): Promise<AuthResult> {
       where: { email: email.trim().toLowerCase() },
     });
 
-    if (!user || !user.password) {
+    if (!user) {
+      return { error: "Invalid email or password" };
+    }
+
+    if (!user.password && user.authProvider !== "EMAIL") {
+      const provider = user.authProvider === "GOOGLE" ? "Google" : "Facebook";
+      return { error: `This email is linked to ${provider}. Please sign in with ${provider}.` };
+    }
+
+    if (!user.password) {
       return { error: "Invalid email or password" };
     }
 
@@ -260,6 +245,45 @@ async function loadEnrichedCart(userId: string): Promise<EnrichedCartItem[]> {
         stock: effectiveStock,
       };
     });
+}
+
+/**
+ * Shared helper: creates user, session, and saves cart items.
+ * Used by both the direct register() action and verifyRegistrationOtp().
+ */
+export async function createUserAndSession(
+  name: string,
+  email: string,
+  hashedPassword: string,
+  localCartItems?: CartDbItemInput[],
+): Promise<AuthSuccess> {
+  const user = await db.user.create({
+    data: {
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password: hashedPassword,
+    },
+  });
+
+  await createSession({ userId: user.id, role: user.role });
+
+  if (localCartItems && localCartItems.length > 0) {
+    await db.cartItem.createMany({
+      data: localCartItems.map((item) => ({
+        userId: user.id,
+        productId: item.productId,
+        variantId: item.variantId ?? null,
+        quantity: item.quantity,
+      })),
+    });
+  }
+
+  return {
+    success: true,
+    hasDbCart: false,
+    dbCartItemCount: 0,
+    redirectUrl: "/",
+  };
 }
 
 export async function logout() {

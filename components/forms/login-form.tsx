@@ -13,11 +13,12 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "";
+  const oauthError = searchParams.get("error") || "";
 
   const items = useCartStore((s) => s.items);
   const replaceCart = useCartStore((s) => s.replaceCart);
 
-  const [error, setError] = useState("");
+  const [error, setError] = useState(oauthError);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -28,9 +29,12 @@ export function LoginForm() {
     redirectUrl: string;
   } | null>(null);
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setError("");
     setLoading(true);
+
+    const formData = new FormData(e.currentTarget);
 
     const localCartItems: CartDbItemInput[] = items.map((item) => ({
       productId: item.id,
@@ -156,7 +160,7 @@ export function LoginForm() {
         )}
 
         {/* Form */}
-        <form action={handleSubmit} className="mt-8 space-y-5">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <fieldset disabled={loading} className="space-y-5">
           <input type="hidden" name="callbackUrl" value={callbackUrl} />
           {/* Email */}
@@ -210,7 +214,7 @@ export function LoginForm() {
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white/80"
               >
                 <Image
-                  src="/icons/eye-icon.svg"
+                  src={showPassword ? "/icons/eye-off-icon.svg" : "/icons/eye-icon.svg"}
                   alt="Toggle password visibility"
                   width={18}
                   height={16}
@@ -219,15 +223,8 @@ export function LoginForm() {
             </div>
           </div>
 
-          {/* Remember me / Forgot password */}
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-sm text-white/80">
-              <input
-                type="checkbox"
-                className="size-4 rounded border-black bg-white accent-purple-500"
-              />
-              Remember me
-            </label>
+          {/* Forgot password */}
+          <div className="flex items-center justify-end">
             <Link
               href="/forgot-password"
               className="text-sm font-medium text-purple-300 hover:text-purple-200"
@@ -267,14 +264,20 @@ export function LoginForm() {
 
         {/* Social Buttons */}
         <div className="mt-6 flex gap-4">
-          <button className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 py-3 text-sm font-medium text-white transition hover:bg-white/20">
+          <a
+            href="/api/auth/google"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 py-3 text-sm font-medium text-white transition hover:bg-white/20"
+          >
             <Image src="/icons/google-icon.svg" alt="" width={16} height={16} />
             Google
-          </button>
-          <button className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 py-3 text-sm font-medium text-white transition hover:bg-white/20">
-            <Image src="/icons/apple-icon.svg" alt="" width={12} height={16} />
-            Apple
-          </button>
+          </a>
+          <a
+            href="/api/auth/facebook"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 py-3 text-sm font-medium text-white transition hover:bg-white/20"
+          >
+            <Image src="/icons/facebook-icon.svg" alt="" width={16} height={16} />
+            Facebook
+          </a>
         </div>
 
         {/* Sign up link */}
@@ -285,6 +288,16 @@ export function LoginForm() {
             className="mt-1 inline-block text-base font-medium text-purple-300 hover:text-purple-200"
           >
             Sign up
+          </Link>
+        </div>
+
+        {/* Back to store */}
+        <div className="mt-4 text-center">
+          <Link
+            href="/"
+            className="text-sm text-white/60 transition hover:text-white/80"
+          >
+            &larr; Back to Store
           </Link>
         </div>
       </div>

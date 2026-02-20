@@ -13,14 +13,15 @@ datasource db {
 // ──────────────────────────────────────
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  password  String?
-  image     String?
-  role      Role     @default(CUSTOMER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String?
+  password     String?
+  image        String?
+  authProvider AuthProvider @default(EMAIL)
+  role         Role         @default(CUSTOMER)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   orders    Order[]
   reviews   Review[]
@@ -28,6 +29,12 @@ model User {
   cartItems CartItem[]
 
   @@map("users")
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  FACEBOOK
 }
 
 model Address {
@@ -46,6 +53,24 @@ model Address {
   orders Order[]
 
   @@map("addresses")
+}
+
+model OtpVerification {
+  id        String   @id @default(cuid())
+  email     String
+  otp       String
+  type      OtpType
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([email, type])
+  @@map("otp_verifications")
+}
+
+enum OtpType {
+  REGISTRATION
+  PASSWORD_RESET
 }
 
 enum Role {
