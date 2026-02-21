@@ -4,20 +4,7 @@ import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { slugify } from "@/lib/utils";
-
-type ProductInput = {
-  name: string;
-  description?: string;
-  price: number;
-  comparePrice?: number;
-  sku?: string;
-  stock: number;
-  images: string[];
-  attributes?: Record<string, string>;
-  isActive?: boolean;
-  categoryId?: string;
-  facetValueIds?: string[];
-};
+import { productSchema, productUpdateSchema } from "@/lib/validations/product";
 
 function serializeProduct(product: Record<string, unknown>) {
   return {
@@ -27,9 +14,16 @@ function serializeProduct(product: Record<string, unknown>) {
   };
 }
 
-export async function createProduct(data: ProductInput) {
+export async function createProduct(data: unknown) {
   await requireAdmin();
-  const slug = slugify(data.name);
+
+  const parsed = productSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  const input = parsed.data;
+  const slug = slugify(input.name);
 
   // Check slug uniqueness
   const existing = await db.product.findUnique({ where: { slug } });
@@ -37,9 +31,9 @@ export async function createProduct(data: ProductInput) {
     return { success: false, error: "A product with this name already exists" };
   }
 
-  if (data.sku) {
+  if (input.sku) {
     const existingSku = await db.product.findUnique({
-      where: { sku: data.sku },
+      where: { sku: input.sku },
     });
     if (existingSku) {
       return { success: false, error: "SKU already exists" };
@@ -49,23 +43,23 @@ export async function createProduct(data: ProductInput) {
   const product = await db.$transaction(async (tx) => {
     const p = await tx.product.create({
       data: {
-        name: data.name,
+        name: input.name,
         slug,
-        description: data.description || null,
-        price: data.price,
-        comparePrice: data.comparePrice ?? null,
-        sku: data.sku || null,
-        stock: data.stock,
-        images: data.images,
-        attributes: data.attributes ?? undefined,
-        isActive: data.isActive ?? true,
-        categoryId: data.categoryId || null,
+        description: input.description || null,
+        price: input.price,
+        comparePrice: input.comparePrice ?? null,
+        sku: input.sku || null,
+        stock: input.stock,
+        images: input.images,
+        attributes: input.attributes ?? undefined,
+        isActive: input.isActive,
+        categoryId: input.categoryId || null,
       },
     });
 
-    if (data.facetValueIds && data.facetValueIds.length > 0) {
+    if (input.facetValueIds.length > 0) {
       await tx.productFacetValue.createMany({
-        data: data.facetValueIds.map((fvId) => ({
+        data: input.facetValueIds.map((fvId) => ({
           productId: p.id,
           facetValueId: fvId,
         })),
@@ -81,8 +75,16 @@ export async function createProduct(data: ProductInput) {
   return { success: true, product: serializeProduct(product) };
 }
 
-export async function updateProduct(id: string, data: Partial<ProductInput>) {
+export async function updateProduct(id: string, data: unknown) {
   await requireAdmin();
+
+  const parsed = productUpdateSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  const input = parsed.data;
+
   const product = await db.product.findUnique({ where: { id } });
   if (!product) {
     return { success: false, error: "Product not found" };
@@ -90,10 +92,9 @@ export async function updateProduct(id: string, data: Partial<ProductInput>) {
 
   const updateData: Record<string, unknown> = {};
 
-  if (data.name !== undefined) {
-    updateData.name = data.name;
-    updateData.slug = slugify(data.name);
-    // Check slug uniqueness (excluding current product)
+  if (input.name !== undefined) {
+    updateData.name = input.name;
+    updateData.slug = slugify(input.name);
     const existing = await db.product.findFirst({
       where: { slug: updateData.slug as string, id: { not: id } },
     });
@@ -105,25 +106,25 @@ export async function updateProduct(id: string, data: Partial<ProductInput>) {
     }
   }
 
-  if (data.description !== undefined) updateData.description = data.description || null;
-  if (data.price !== undefined) updateData.price = data.price;
-  if (data.comparePrice !== undefined) updateData.comparePrice = data.comparePrice ?? null;
-  if (data.sku !== undefined) {
-    if (data.sku) {
+  if (input.description !== undefined) updateData.description = input.description || null;
+  if (input.price !== undefined) updateData.price = input.price;
+  if (input.comparePrice !== undefined) updateData.comparePrice = input.comparePrice ?? null;
+  if (input.sku !== undefined) {
+    if (input.sku) {
       const existingSku = await db.product.findFirst({
-        where: { sku: data.sku, id: { not: id } },
+        where: { sku: input.sku, id: { not: id } },
       });
       if (existingSku) {
         return { success: false, error: "SKU already exists" };
       }
     }
-    updateData.sku = data.sku || null;
+    updateData.sku = input.sku || null;
   }
-  if (data.stock !== undefined) updateData.stock = data.stock;
-  if (data.images !== undefined) updateData.images = data.images;
-  if (data.attributes !== undefined) updateData.attributes = data.attributes ?? undefined;
-  if (data.isActive !== undefined) updateData.isActive = data.isActive;
-  if (data.categoryId !== undefined) updateData.categoryId = data.categoryId || null;
+  if (input.stock !== undefined) updateData.stock = input.stock;
+  if (input.images !== undefined) updateData.images = input.images;
+  if (input.attributes !== undefined) updateData.attributes = input.attributes ?? undefined;
+  if (input.isActive !== undefined) updateData.isActive = input.isActive;
+  if (input.categoryId !== undefined) updateData.categoryId = input.categoryId || null;
 
   const updated = await db.$transaction(async (tx) => {
     const p = await tx.product.update({
@@ -131,13 +132,13 @@ export async function updateProduct(id: string, data: Partial<ProductInput>) {
       data: updateData,
     });
 
-    if (data.facetValueIds !== undefined) {
+    if (input.facetValueIds !== undefined) {
       await tx.productFacetValue.deleteMany({
         where: { productId: id },
       });
-      if (data.facetValueIds.length > 0) {
+      if (input.facetValueIds.length > 0) {
         await tx.productFacetValue.createMany({
-          data: data.facetValueIds.map((fvId) => ({
+          data: input.facetValueIds.map((fvId) => ({
             productId: id,
             facetValueId: fvId,
           })),

@@ -4,17 +4,18 @@ import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { slugify } from "@/lib/utils";
+import { categorySchema, categoryUpdateSchema } from "@/lib/validations/category";
 
-type CategoryInput = {
-  name: string;
-  description?: string;
-  image?: string;
-  parentId?: string;
-};
-
-export async function createCategory(data: CategoryInput) {
+export async function createCategory(data: unknown) {
   await requireAdmin();
-  const slug = slugify(data.name);
+
+  const parsed = categorySchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  const input = parsed.data;
+  const slug = slugify(input.name);
 
   const existing = await db.category.findUnique({ where: { slug } });
   if (existing) {
@@ -24,9 +25,9 @@ export async function createCategory(data: CategoryInput) {
     };
   }
 
-  if (data.parentId) {
+  if (input.parentId) {
     const parent = await db.category.findUnique({
-      where: { id: data.parentId },
+      where: { id: input.parentId },
     });
     if (!parent) {
       return { success: false, error: "Parent category not found" };
@@ -35,11 +36,11 @@ export async function createCategory(data: CategoryInput) {
 
   const category = await db.category.create({
     data: {
-      name: data.name,
+      name: input.name,
       slug,
-      description: data.description || null,
-      image: data.image || null,
-      parentId: data.parentId || null,
+      description: input.description || null,
+      image: input.image || null,
+      parentId: input.parentId || null,
     },
   });
 
@@ -52,9 +53,17 @@ export async function createCategory(data: CategoryInput) {
 
 export async function updateCategory(
   id: string,
-  data: Partial<CategoryInput>
+  data: unknown
 ) {
   await requireAdmin();
+
+  const parsed = categoryUpdateSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  const input = parsed.data;
+
   const category = await db.category.findUnique({ where: { id } });
   if (!category) {
     return { success: false, error: "Category not found" };
@@ -62,9 +71,9 @@ export async function updateCategory(
 
   const updateData: Record<string, unknown> = {};
 
-  if (data.name !== undefined) {
-    updateData.name = data.name;
-    updateData.slug = slugify(data.name);
+  if (input.name !== undefined) {
+    updateData.name = input.name;
+    updateData.slug = slugify(input.name);
     const existing = await db.category.findFirst({
       where: { slug: updateData.slug as string, id: { not: id } },
     });
@@ -76,13 +85,13 @@ export async function updateCategory(
     }
   }
 
-  if (data.description !== undefined) updateData.description = data.description || null;
-  if (data.image !== undefined) updateData.image = data.image || null;
-  if (data.parentId !== undefined) {
-    if (data.parentId === id) {
+  if (input.description !== undefined) updateData.description = input.description || null;
+  if (input.image !== undefined) updateData.image = input.image || null;
+  if (input.parentId !== undefined) {
+    if (input.parentId === id) {
       return { success: false, error: "Category cannot be its own parent" };
     }
-    updateData.parentId = data.parentId || null;
+    updateData.parentId = input.parentId || null;
   }
 
   const updated = await db.category.update({

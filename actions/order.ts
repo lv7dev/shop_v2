@@ -5,7 +5,10 @@ import { getSession, requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import * as Sentry from "@sentry/nextjs";
 import type { OrderStatus } from "@/lib/generated/prisma/client";
-import type { CartItemInput } from "@/types/cart";
+import {
+  createOrderSchema,
+  orderStatusSchema,
+} from "@/lib/validations/order";
 
 function serializeOrder(order: Record<string, unknown>) {
   return {
@@ -24,7 +27,7 @@ function serializeOrder(order: Record<string, unknown>) {
 }
 
 export async function createOrder(
-  items: CartItemInput[],
+  items: unknown,
   addressId?: string,
   note?: string
 ) {
@@ -32,20 +35,24 @@ export async function createOrder(
   if (!session) {
     return { success: false, error: "Please sign in to place an order" };
   }
-  const userId = session.userId;
-  if (items.length === 0) {
-    return { success: false, error: "Cart is empty" };
+
+  const parsed = createOrderSchema.safeParse({ items, addressId, note });
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
   }
+
+  const input = parsed.data;
+  const userId = session.userId;
 
   try {
     // Fetch products to verify prices and stock
-    const productIds = items.map((item) => item.id);
+    const productIds = input.items.map((item) => item.id);
     const products = await db.product.findMany({
       where: { id: { in: productIds }, isActive: true },
     });
 
     // Fetch variants if any items have variantId
-    const variantIds = items
+    const variantIds = input.items
       .filter((item) => item.variantId)
       .map((item) => item.variantId!);
     const variants =
@@ -56,13 +63,13 @@ export async function createOrder(
         : [];
 
     // Validate all products exist and are active
-    const uniqueProductIds = new Set(items.map((i) => i.id));
+    const uniqueProductIds = new Set(input.items.map((i) => i.id));
     if (products.length !== uniqueProductIds.size) {
       return { success: false, error: "Some products are no longer available" };
     }
 
     // Validate stock (variant-aware)
-    for (const item of items) {
+    for (const item of input.items) {
       const product = products.find((p) => p.id === item.id);
       if (!product) {
         return { success: false, error: `Product not found: ${item.id}` };
@@ -93,7 +100,7 @@ export async function createOrder(
     }
 
     // Calculate totals from DB prices (not client prices)
-    const orderItems = items.map((item) => {
+    const orderItems = input.items.map((item) => {
       const product = products.find((p) => p.id === item.id)!;
 
       if (item.variantId) {
@@ -125,7 +132,7 @@ export async function createOrder(
     // Create order and decrement stock in a transaction
     const order = await db.$transaction(async (tx) => {
       // Decrement stock for each item
-      for (const item of items) {
+      for (const item of input.items) {
         if (item.variantId) {
           await tx.productVariant.update({
             where: { id: item.variantId },
@@ -142,12 +149,12 @@ export async function createOrder(
       return tx.order.create({
         data: {
           userId,
-          addressId: addressId || undefined,
+          addressId: input.addressId || undefined,
           subtotal,
           shippingCost,
           tax,
           total,
-          note,
+          note: input.note,
           items: {
             create: orderItems.map((oi) => ({
               productId: oi.productId,
@@ -172,8 +179,13 @@ export async function createOrder(
   }
 }
 
-export async function updateOrderStatus(orderId: string, status: OrderStatus) {
+export async function updateOrderStatus(orderId: string, status: string) {
   await requireAdmin();
+
+  const parsed = orderStatusSchema.safeParse(status);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid order status" };
+  }
 
   try {
     const order = await db.order.findUnique({ where: { id: orderId } });
@@ -183,7 +195,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
 
     const updated = await db.order.update({
       where: { id: orderId },
-      data: { status },
+      data: { status: parsed.data as OrderStatus },
     });
 
     revalidatePath("/orders");

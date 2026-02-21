@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import { Loader2, ShoppingBag, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
@@ -12,6 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { useCartStore } from "@/store/cart-store";
 import { createOrder } from "@/actions/order";
+import {
+  checkoutSchema,
+  type CheckoutInput,
+} from "@/lib/validations/checkout";
 
 export function CheckoutForm() {
   const router = useRouter();
@@ -22,21 +27,29 @@ export function CheckoutForm() {
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
 
-  const [loading, setLoading] = useState(false);
-  const [note, setNote] = useState("");
-  const [shipping, setShipping] = useState({
-    name: "",
-    phone: "",
-    street: "",
-    city: "",
-    state: "",
-    zipCode: "",
-    country: "",
-  });
-
   const shippingCost = totalPrice >= 100 ? 0 : 10;
   const tax = totalPrice * 0.08;
   const total = totalPrice + shippingCost + tax;
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<CheckoutInput>({
+    resolver: zodResolver(checkoutSchema),
+    defaultValues: {
+      shipping: {
+        name: "",
+        phone: "",
+        street: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        country: "",
+      },
+      note: "",
+    },
+  });
 
   if (!hydrated) {
     return <div className="h-96 animate-pulse rounded-lg bg-muted" />;
@@ -57,24 +70,7 @@ export function CheckoutForm() {
     );
   }
 
-  function updateShipping(field: string, value: string) {
-    setShipping((prev) => ({ ...prev, [field]: value }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    // Basic validation
-    const requiredFields = ["name", "street", "city", "state", "zipCode", "country"] as const;
-    for (const field of requiredFields) {
-      if (!shipping[field].trim()) {
-        toast.error(`Please fill in ${field === "zipCode" ? "ZIP code" : field}`);
-        return;
-      }
-    }
-
-    setLoading(true);
-
+  async function onSubmit(values: CheckoutInput) {
     try {
       const cartItems = items.map((item) => ({
         id: item.id,
@@ -82,7 +78,11 @@ export function CheckoutForm() {
         variantId: item.variantId,
       }));
 
-      const result = await createOrder(cartItems, undefined, note || undefined);
+      const result = await createOrder(
+        cartItems,
+        undefined,
+        values.note || undefined
+      );
 
       if (!result.success) {
         toast.error(result.error);
@@ -95,13 +95,11 @@ export function CheckoutForm() {
       router.push(`/orders/${order.id}?new=true`);
     } catch {
       toast.error("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-5">
+    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-8 lg:grid-cols-5">
       {/* Shipping form */}
       <div className="space-y-6 lg:col-span-3">
         <div className="rounded-lg border p-6">
@@ -112,18 +110,20 @@ export function CheckoutForm() {
                 <Label htmlFor="name">Full Name *</Label>
                 <Input
                   id="name"
-                  value={shipping.name}
-                  onChange={(e) => updateShipping("name", e.target.value)}
+                  {...register("shipping.name")}
                   placeholder="John Doe"
-                  required
                 />
+                {errors.shipping?.name && (
+                  <p className="text-sm text-destructive">
+                    {errors.shipping.name.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
-                  value={shipping.phone}
-                  onChange={(e) => updateShipping("phone", e.target.value)}
+                  {...register("shipping.phone")}
                   placeholder="+1 (555) 123-4567"
                 />
               </div>
@@ -133,11 +133,14 @@ export function CheckoutForm() {
               <Label htmlFor="street">Street Address *</Label>
               <Input
                 id="street"
-                value={shipping.street}
-                onChange={(e) => updateShipping("street", e.target.value)}
+                {...register("shipping.street")}
                 placeholder="123 Main St"
-                required
               />
+              {errors.shipping?.street && (
+                <p className="text-sm text-destructive">
+                  {errors.shipping.street.message}
+                </p>
+              )}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">
@@ -145,31 +148,40 @@ export function CheckoutForm() {
                 <Label htmlFor="city">City *</Label>
                 <Input
                   id="city"
-                  value={shipping.city}
-                  onChange={(e) => updateShipping("city", e.target.value)}
+                  {...register("shipping.city")}
                   placeholder="New York"
-                  required
                 />
+                {errors.shipping?.city && (
+                  <p className="text-sm text-destructive">
+                    {errors.shipping.city.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="state">State *</Label>
                 <Input
                   id="state"
-                  value={shipping.state}
-                  onChange={(e) => updateShipping("state", e.target.value)}
+                  {...register("shipping.state")}
                   placeholder="NY"
-                  required
                 />
+                {errors.shipping?.state && (
+                  <p className="text-sm text-destructive">
+                    {errors.shipping.state.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="zipCode">ZIP Code *</Label>
                 <Input
                   id="zipCode"
-                  value={shipping.zipCode}
-                  onChange={(e) => updateShipping("zipCode", e.target.value)}
+                  {...register("shipping.zipCode")}
                   placeholder="10001"
-                  required
                 />
+                {errors.shipping?.zipCode && (
+                  <p className="text-sm text-destructive">
+                    {errors.shipping.zipCode.message}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -177,11 +189,14 @@ export function CheckoutForm() {
               <Label htmlFor="country">Country *</Label>
               <Input
                 id="country"
-                value={shipping.country}
-                onChange={(e) => updateShipping("country", e.target.value)}
+                {...register("shipping.country")}
                 placeholder="United States"
-                required
               />
+              {errors.shipping?.country && (
+                <p className="text-sm text-destructive">
+                  {errors.shipping.country.message}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -189,11 +204,13 @@ export function CheckoutForm() {
         <div className="rounded-lg border p-6">
           <h2 className="mb-4 text-lg font-semibold">Order Notes</h2>
           <Textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
+            {...register("note")}
             placeholder="Any special instructions for your order..."
             rows={3}
           />
+          {errors.note && (
+            <p className="text-sm text-destructive">{errors.note.message}</p>
+          )}
         </div>
       </div>
 
@@ -268,8 +285,8 @@ export function CheckoutForm() {
             </div>
           </div>
 
-          <Button type="submit" className="mt-6 w-full" size="lg" disabled={loading}>
-            {loading ? (
+          <Button type="submit" className="mt-6 w-full" size="lg" disabled={isSubmitting}>
+            {isSubmitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
                 Processing...

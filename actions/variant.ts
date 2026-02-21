@@ -3,13 +3,7 @@
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-
-export type VariantInput = {
-  sku?: string;
-  price: number;
-  stock: number;
-  facetValueIds: string[];
-};
+import { variantSchema, saveVariantsSchema } from "@/lib/validations/product";
 
 function serializeVariant(variant: Record<string, unknown>) {
   return {
@@ -18,12 +12,19 @@ function serializeVariant(variant: Record<string, unknown>) {
   };
 }
 
-export async function createVariant(productId: string, data: VariantInput) {
+export async function createVariant(productId: string, data: unknown) {
   await requireAdmin();
 
-  if (data.sku) {
+  const parsed = variantSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  const input = parsed.data;
+
+  if (input.sku) {
     const existing = await db.productVariant.findUnique({
-      where: { sku: data.sku },
+      where: { sku: input.sku },
     });
     if (existing) {
       return { success: false, error: "SKU already exists" };
@@ -34,15 +35,15 @@ export async function createVariant(productId: string, data: VariantInput) {
     const v = await tx.productVariant.create({
       data: {
         productId,
-        sku: data.sku || null,
-        price: data.price,
-        stock: data.stock,
+        sku: input.sku || null,
+        price: input.price,
+        stock: input.stock,
       },
     });
 
-    if (data.facetValueIds.length > 0) {
+    if (input.facetValueIds.length > 0) {
       await tx.variantFacetValue.createMany({
-        data: data.facetValueIds.map((fvId) => ({
+        data: input.facetValueIds.map((fvId) => ({
           variantId: v.id,
           facetValueId: fvId,
         })),
@@ -58,8 +59,15 @@ export async function createVariant(productId: string, data: VariantInput) {
   return { success: true, variant: serializeVariant(variant) };
 }
 
-export async function updateVariant(variantId: string, data: VariantInput) {
+export async function updateVariant(variantId: string, data: unknown) {
   await requireAdmin();
+
+  const parsed = variantSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  const input = parsed.data;
 
   const existing = await db.productVariant.findUnique({
     where: { id: variantId },
@@ -68,9 +76,9 @@ export async function updateVariant(variantId: string, data: VariantInput) {
     return { success: false, error: "Variant not found" };
   }
 
-  if (data.sku) {
+  if (input.sku) {
     const skuExists = await db.productVariant.findFirst({
-      where: { sku: data.sku, id: { not: variantId } },
+      where: { sku: input.sku, id: { not: variantId } },
     });
     if (skuExists) {
       return { success: false, error: "SKU already exists" };
@@ -81,9 +89,9 @@ export async function updateVariant(variantId: string, data: VariantInput) {
     const v = await tx.productVariant.update({
       where: { id: variantId },
       data: {
-        sku: data.sku || null,
-        price: data.price,
-        stock: data.stock,
+        sku: input.sku || null,
+        price: input.price,
+        stock: input.stock,
       },
     });
 
@@ -92,9 +100,9 @@ export async function updateVariant(variantId: string, data: VariantInput) {
       where: { variantId },
     });
 
-    if (data.facetValueIds.length > 0) {
+    if (input.facetValueIds.length > 0) {
       await tx.variantFacetValue.createMany({
-        data: data.facetValueIds.map((fvId) => ({
+        data: input.facetValueIds.map((fvId) => ({
           variantId,
           facetValueId: fvId,
         })),
@@ -130,12 +138,19 @@ export async function deleteVariant(variantId: string) {
 
 export async function saveProductVariants(
   productId: string,
-  variants: VariantInput[]
+  variants: unknown
 ) {
   await requireAdmin();
 
+  const parsed = saveVariantsSchema.safeParse({ productId, variants });
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  const input = parsed.data;
+
   // Validate SKU uniqueness within the batch
-  const skus = variants.filter((v) => v.sku).map((v) => v.sku!);
+  const skus = input.variants.filter((v) => v.sku).map((v) => v.sku!);
   const uniqueSkus = new Set(skus);
   if (skus.length !== uniqueSkus.size) {
     return { success: false, error: "Duplicate SKUs within variants" };
@@ -146,7 +161,7 @@ export async function saveProductVariants(
     const existingSkus = await db.productVariant.findMany({
       where: {
         sku: { in: skus },
-        productId: { not: productId },
+        productId: { not: input.productId },
       },
       select: { sku: true },
     });
@@ -161,17 +176,17 @@ export async function saveProductVariants(
   await db.$transaction(async (tx) => {
     // Delete all existing variants for this product
     await tx.variantFacetValue.deleteMany({
-      where: { variant: { productId } },
+      where: { variant: { productId: input.productId } },
     });
     await tx.productVariant.deleteMany({
-      where: { productId },
+      where: { productId: input.productId },
     });
 
     // Create new variants
-    for (const variant of variants) {
+    for (const variant of input.variants) {
       const v = await tx.productVariant.create({
         data: {
-          productId,
+          productId: input.productId,
           sku: variant.sku || null,
           price: variant.price,
           stock: variant.stock,

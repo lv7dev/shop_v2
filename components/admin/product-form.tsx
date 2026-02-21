@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Plus, Trash2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -20,6 +22,11 @@ import {
 import { createProduct, updateProduct } from "@/actions/product";
 import { saveProductVariants } from "@/actions/variant";
 import { VariantManager, type VariantData } from "./variant-manager";
+import {
+  productFormSchema,
+  type ProductFormValues,
+  formValuesToProductInput,
+} from "@/lib/validations/product-form";
 
 type Category = {
   id: string;
@@ -71,25 +78,37 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
   const router = useRouter();
   const isEditing = !!product;
 
-  const [loading, setLoading] = useState(false);
-  const [name, setName] = useState(product?.name ?? "");
-  const [description, setDescription] = useState(product?.description ?? "");
-  const [price, setPrice] = useState(product?.price?.toString() ?? "");
-  const [comparePrice, setComparePrice] = useState(
-    product?.comparePrice?.toString() ?? ""
-  );
-  const [sku, setSku] = useState(product?.sku ?? "");
-  const [stock, setStock] = useState(product?.stock?.toString() ?? "0");
-  const [categoryId, setCategoryId] = useState(product?.categoryId ?? "");
-  const [isActive, setIsActive] = useState(product?.isActive ?? true);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<ProductFormValues>({
+    resolver: zodResolver(productFormSchema),
+    defaultValues: {
+      name: product?.name ?? "",
+      description: product?.description ?? "",
+      price: product?.price?.toString() ?? "",
+      comparePrice: product?.comparePrice?.toString() ?? "",
+      sku: product?.sku ?? "",
+      stock: product?.stock?.toString() ?? "0",
+      categoryId: product?.categoryId ?? "",
+      isActive: product?.isActive ?? true,
+    },
+  });
+
+  const isActive = watch("isActive");
+  const categoryId = watch("categoryId");
+  const price = watch("price");
+
+  // These fields are managed outside RHF (dynamic arrays / Set-based)
   const [images, setImages] = useState<string[]>(
     product?.images?.length ? product.images : [""]
   );
   const [selectedFacetValues, setSelectedFacetValues] = useState<Set<string>>(
     new Set(product?.facetValueIds ?? [])
   );
-
-  // Variants state
   const [variants, setVariants] = useState<VariantData[]>(
     product?.variants?.map((v) => ({
       id: v.id,
@@ -124,19 +143,8 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
     setSelectedFacetValues(next);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (!name.trim()) {
-      toast.error("Product name is required");
-      return;
-    }
-    if (!price || isNaN(Number(price)) || Number(price) < 0) {
-      toast.error("Valid price is required");
-      return;
-    }
-
-    // Validate variants
+  async function onSubmit(values: ProductFormValues) {
+    // Validate variants (outside RHF scope)
     for (let i = 0; i < variants.length; i++) {
       const v = variants[i];
       if (!v.price || isNaN(Number(v.price)) || Number(v.price) < 0) {
@@ -149,20 +157,11 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
       }
     }
 
-    setLoading(true);
-
-    const data = {
-      name: name.trim(),
-      description: description.trim() || undefined,
-      price: Number(price),
-      comparePrice: comparePrice ? Number(comparePrice) : undefined,
-      sku: sku.trim() || undefined,
-      stock: Number(stock) || 0,
-      images: images.filter((img) => img.trim()),
-      isActive,
-      categoryId: categoryId && categoryId !== "none" ? categoryId : undefined,
-      facetValueIds: Array.from(selectedFacetValues),
-    };
+    const data = formValuesToProductInput(
+      values,
+      images,
+      Array.from(selectedFacetValues),
+    );
 
     const result = isEditing
       ? await updateProduct(product.id, data)
@@ -170,7 +169,6 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
 
     if (!result.success) {
       toast.error(result.error);
-      setLoading(false);
       return;
     }
 
@@ -190,15 +188,12 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
       const variantResult = await saveProductVariants(productId, variantData);
       if (!variantResult.success) {
         toast.error(`Product saved, but variants failed: ${variantResult.error}`);
-        setLoading(false);
         return;
       }
     } else if (productId && variants.length === 0 && isEditing) {
-      // If editing and all variants removed, clear them
       const variantResult = await saveProductVariants(productId, []);
       if (!variantResult.success) {
         toast.error(`Product saved, but clearing variants failed: ${variantResult.error}`);
-        setLoading(false);
         return;
       }
     }
@@ -206,8 +201,6 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
     toast.success(isEditing ? "Product updated" : "Product created");
     router.push("/dashboard/products");
     router.refresh();
-
-    setLoading(false);
   }
 
   // Flatten categories for select
@@ -240,7 +233,7 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
   );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       {/* Back link */}
       <Link
         href="/dashboard/products"
@@ -261,21 +254,25 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
               <Label htmlFor="name">Name *</Label>
               <Input
                 id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                {...register("name")}
                 placeholder="Product name"
               />
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                {...register("description")}
                 placeholder="Product description"
                 rows={4}
               />
+              {errors.description && (
+                <p className="text-sm text-destructive">{errors.description.message}</p>
+              )}
             </div>
           </div>
 
@@ -296,10 +293,12 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
                   type="number"
                   step="0.01"
                   min="0"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
+                  {...register("price")}
                   placeholder="0.00"
                 />
+                {errors.price && (
+                  <p className="text-sm text-destructive">{errors.price.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="comparePrice">Compare-at Price</Label>
@@ -308,8 +307,7 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
                   type="number"
                   step="0.01"
                   min="0"
-                  value={comparePrice}
-                  onChange={(e) => setComparePrice(e.target.value)}
+                  {...register("comparePrice")}
                   placeholder="0.00"
                 />
               </div>
@@ -329,8 +327,7 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
                 <Label htmlFor="sku">SKU</Label>
                 <Input
                   id="sku"
-                  value={sku}
-                  onChange={(e) => setSku(e.target.value)}
+                  {...register("sku")}
                   placeholder="SKU-001"
                 />
               </div>
@@ -340,8 +337,7 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
                   id="stock"
                   type="number"
                   min="0"
-                  value={stock}
-                  onChange={(e) => setStock(e.target.value)}
+                  {...register("stock")}
                 />
               </div>
             </div>
@@ -438,7 +434,7 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
             <label className="flex items-center gap-2 text-sm">
               <Checkbox
                 checked={isActive}
-                onCheckedChange={(checked) => setIsActive(checked === true)}
+                onCheckedChange={(checked) => setValue("isActive", checked === true)}
               />
               Active (visible in store)
             </label>
@@ -447,7 +443,10 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
           {/* Category */}
           <div className="rounded-lg border p-6 space-y-4">
             <h2 className="text-lg font-semibold">Category</h2>
-            <Select value={categoryId} onValueChange={setCategoryId}>
+            <Select
+              value={categoryId}
+              onValueChange={(val) => setValue("categoryId", val)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
@@ -488,8 +487,8 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
 
           {/* Actions */}
           <div className="flex flex-col gap-2">
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              {isSubmitting
                 ? "Saving..."
                 : isEditing
                   ? "Update Product"
