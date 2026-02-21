@@ -1,13 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginWithCart } from "@/actions/auth";
 import { useCartStore } from "@/store/cart-store";
-import { CartMergeModal } from "@/components/cart/cart-merge-modal";
 import type { CartDbItemInput } from "@/types/cart";
+
+const CartMergeModal = dynamic(
+  () => import("@/components/cart/cart-merge-modal").then((mod) => mod.CartMergeModal),
+  { ssr: false }
+);
 
 export function LoginForm() {
   const router = useRouter();

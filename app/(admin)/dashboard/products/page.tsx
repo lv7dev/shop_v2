@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { Package, Plus } from "lucide-react";
@@ -14,7 +15,10 @@ import {
 } from "@/components/ui/table";
 import { getAdminProducts } from "@/services/admin";
 import { formatPrice } from "@/lib/utils";
-import { AdminProductActions } from "@/components/admin/product-actions";
+
+const AdminProductActions = dynamic(
+  () => import("@/components/admin/product-actions").then((mod) => mod.AdminProductActions)
+);
 
 export const metadata: Metadata = {
   title: "Manage Products",

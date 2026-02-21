@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -10,7 +11,10 @@ import {
 } from "@/components/ui/table";
 import { getAdminOrders } from "@/services/admin";
 import { formatPrice } from "@/lib/utils";
-import { OrderStatusSelect } from "@/components/admin/order-status-select";
+
+const OrderStatusSelect = dynamic(
+  () => import("@/components/admin/order-status-select").then((mod) => mod.OrderStatusSelect)
+);
 
 export const metadata: Metadata = {
   title: "Manage Orders",

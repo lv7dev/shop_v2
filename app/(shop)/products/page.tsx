@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { getProducts } from "@/services/products";
 import { getCategories } from "@/services/categories";
 import { getFilterableFacets } from "@/services/facets";
 import { ProductCard } from "@/components/products/product-card";
-import { ProductFilters } from "@/components/products/product-filters";
 import { Pagination } from "@/components/products/pagination";
 import { ITEMS_PER_PAGE, PER_PAGE_OPTIONS } from "@/lib/constants";
 import { Package } from "lucide-react";
+
+const ProductFilters = dynamic(
+  () => import("@/components/products/product-filters").then((mod) => mod.ProductFilters),
+  {
+    loading: () => <div className="hidden w-64 shrink-0 lg:block"><div className="h-96 animate-pulse rounded-lg bg-muted" /></div>,
+  }
+);
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

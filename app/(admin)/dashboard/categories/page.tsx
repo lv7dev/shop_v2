@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fragment } from "react";
+import dynamic from "next/dynamic";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -10,8 +11,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getCategories } from "@/services/categories";
-import { CategoryForm, CategoryEditButton } from "@/components/admin/category-form";
-import { CategoryDeleteButton } from "@/components/admin/category-actions";
+
+const CategoryForm = dynamic(
+  () => import("@/components/admin/category-form").then((mod) => mod.CategoryForm)
+);
+const CategoryEditButton = dynamic(
+  () => import("@/components/admin/category-form").then((mod) => mod.CategoryEditButton)
+);
+const CategoryDeleteButton = dynamic(
+  () => import("@/components/admin/category-actions").then((mod) => mod.CategoryDeleteButton)
+);
 
 export const metadata: Metadata = {
   title: "Manage Categories",

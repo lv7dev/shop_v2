@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { getCategories } from "@/services/categories";
 import { getFacets } from "@/services/facets";
-import { ProductForm } from "@/components/admin/product-form";
+
+const ProductForm = dynamic(
+  () => import("@/components/admin/product-form").then((mod) => mod.ProductForm),
+  { loading: () => <div className="h-96 animate-pulse rounded-lg bg-muted" /> }
+);
 
 export const metadata: Metadata = {
   title: "Create Product",

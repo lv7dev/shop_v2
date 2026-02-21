@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Trash2 } from "lucide-react";
+import dynamic from "next/dynamic";
 import {
   Table,
   TableBody,
@@ -10,9 +10,19 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { getFacets } from "@/services/facets";
-import { FacetForm, FacetEditButton } from "@/components/admin/facet-form";
-import { FacetValuesManager } from "@/components/admin/facet-values-manager";
-import { FacetDeleteButton } from "@/components/admin/facet-actions";
+
+const FacetForm = dynamic(
+  () => import("@/components/admin/facet-form").then((mod) => mod.FacetForm)
+);
+const FacetEditButton = dynamic(
+  () => import("@/components/admin/facet-form").then((mod) => mod.FacetEditButton)
+);
+const FacetValuesManager = dynamic(
+  () => import("@/components/admin/facet-values-manager").then((mod) => mod.FacetValuesManager)
+);
+const FacetDeleteButton = dynamic(
+  () => import("@/components/admin/facet-actions").then((mod) => mod.FacetDeleteButton)
+);
 
 export const metadata: Metadata = {
   title: "Manage Facets",
