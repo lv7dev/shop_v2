@@ -18,9 +18,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const category = await getCategoryBySlug(slug);
   if (!category) return { title: "Category Not Found" };
+
+  const description = category.description ?? `Browse products in ${category.name}`;
+
   return {
     title: category.name,
-    description: category.description ?? `Browse products in ${category.name}`,
+    description,
+    alternates: { canonical: `/categories/${slug}` },
+    openGraph: {
+      title: category.name,
+      description,
+      url: `/categories/${slug}`,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: category.name,
+      description,
+    },
   };
 }
 
@@ -129,6 +143,7 @@ export default async function CategoryDetailPage({
                 images={product.images}
                 stock={product.stock}
                 category={product.category}
+                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 priority={i < 4}
               />
             ))}

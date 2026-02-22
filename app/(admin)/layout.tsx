@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { LayoutDashboard, Package, ShoppingCart, Users, ArrowLeft, FolderTree, Tags } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { requireAdmin } from "@/lib/auth";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 const ADMIN_NAV = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },

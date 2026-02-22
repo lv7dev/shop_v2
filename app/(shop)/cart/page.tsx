@@ -3,6 +3,8 @@ import { CartContent } from "@/components/cart/cart-content";
 
 export const metadata: Metadata = {
   title: "Cart",
+  description: "View and manage the items in your shopping cart.",
+  robots: { index: false, follow: false },
 };
 
 export default function CartPage() {

@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { NavigationProgress } from "@/components/layout/navigation-progress";
+import { rootMetadata, getBaseUrl } from "@/lib/seo";
 import { APP_NAME } from "@/lib/constants";
 import "./globals.css";
 
@@ -16,13 +16,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: APP_NAME,
-    template: `%s | ${APP_NAME}`,
-  },
-  description: "Your one-stop shop for quality products",
-};
+export const metadata = rootMetadata;
 
 export default function RootLayout({
   children,
@@ -31,6 +25,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: APP_NAME,
+              url: getBaseUrl(),
+            }),
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

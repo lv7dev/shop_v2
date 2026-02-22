@@ -12,6 +12,8 @@ import { ORDER_STATUS_LABELS } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Order Detail",
+  description: "View your order details, items, and shipping information.",
+  robots: { index: false, follow: false },
 };
 
 const STATUS_COLORS: Record<string, string> = {

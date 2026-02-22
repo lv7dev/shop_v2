@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,15 @@ import { getCategories } from "@/services/categories";
 import { ProductCard } from "@/components/products/product-card";
 import { BenefitsCarousel } from "@/components/home/benefits-carousel";
 import { RecentlyViewed } from "@/components/home/recently-viewed";
+import { APP_NAME } from "@/lib/constants";
+import { buildPageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: `${APP_NAME} — Discover Quality Products`,
+  description:
+    "Browse our curated collection of premium products. Find exactly what you need at the best prices with free shipping on orders over $50.",
+  path: "/",
+});
 
 export default async function HomePage() {
   const [{ products }, categories] = await Promise.all([
@@ -96,6 +106,7 @@ export default async function HomePage() {
                   images={product.images}
                   stock={product.stock}
                   category={product.category}
+                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                   priority={i < 4}
                 />
               ))}

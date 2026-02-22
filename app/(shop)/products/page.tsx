@@ -50,9 +50,15 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
   const suffix = parts.length > 0 ? ` - ${parts.join(" | ")}` : "";
 
+  const title = `Products${suffix}`;
+  const description = `Browse our products${suffix}. Find exactly what you need with our faceted filters.`;
+
   return {
-    title: `Products${suffix}`,
-    description: `Browse our products${suffix}. Find exactly what you need with our faceted filters.`,
+    title,
+    description,
+    alternates: { canonical: "/products" },
+    openGraph: { title, description, url: "/products" },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 

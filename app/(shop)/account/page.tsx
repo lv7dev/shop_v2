@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Account",
+  description: "Manage your account profile and addresses.",
+  robots: { index: false, follow: false },
 };
 
 export default function AccountPage() {

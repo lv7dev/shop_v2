@@ -3,6 +3,8 @@ import { CheckoutForm } from "@/components/cart/checkout-form";
 
 export const metadata: Metadata = {
   title: "Checkout",
+  description: "Complete your purchase securely.",
+  robots: { index: false, follow: false },
 };
 
 export default function CheckoutPage() {

@@ -7,6 +7,13 @@ import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
   title: "Categories",
+  description: "Browse our product categories and find exactly what you're looking for.",
+  alternates: { canonical: "/categories" },
+  openGraph: {
+    title: "Categories",
+    description: "Browse our product categories and find exactly what you're looking for.",
+    url: "/categories",
+  },
 };
 
 export default async function CategoriesPage() {

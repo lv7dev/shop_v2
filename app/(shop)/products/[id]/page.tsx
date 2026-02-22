@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { formatPrice } from "@/lib/utils";
 import { TrackRecentlyViewed } from "@/components/products/track-recently-viewed";
+import { getBaseUrl } from "@/lib/seo";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -26,10 +27,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ?.map((pfv) => `${pfv.facetValue.facet.name}: ${pfv.facetValue.value}`)
     .join(", ");
   const desc = [product.description, facetParts].filter(Boolean).join(" | ");
+  const description = desc || `Buy ${product.name} at the best price.`;
+  const image = product.images[0] ?? undefined;
 
   return {
     title: product.name,
-    description: desc || undefined,
+    description,
+    alternates: { canonical: `/products/${product.slug}` },
+    openGraph: {
+      title: product.name,
+      description,
+      url: `/products/${product.slug}`,
+      type: "article",
+      ...(image && { images: [image] }),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.name,
+      description,
+      ...(image && { images: [image] }),
+    },
   };
 }
 
@@ -99,7 +116,22 @@ export default async function ProductDetailPage({ params }: Props) {
     ? variantsData.reduce((sum, v) => sum + v.stock, 0)
     : product.stock;
 
-  // JSON-LD structured data
+  // BreadcrumbList JSON-LD
+  const baseUrl = getBaseUrl();
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: baseUrl },
+      { "@type": "ListItem", position: 2, name: "Products", item: `${baseUrl}/products` },
+      ...(product.category
+        ? [{ "@type": "ListItem", position: 3, name: product.category.name, item: `${baseUrl}/products?category=${product.category.slug}` }]
+        : []),
+      { "@type": "ListItem", position: product.category ? 4 : 3, name: product.name },
+    ],
+  };
+
+  // Product JSON-LD structured data
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -154,6 +186,10 @@ export default async function ProductDetailPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
       {/* Breadcrumbs */}
