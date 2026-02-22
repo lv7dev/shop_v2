@@ -16,6 +16,7 @@ type ProductCardProps = {
   stock: number;
   category?: { name: string; slug: string } | null;
   priority?: boolean;
+  sizes?: string;
 };
 
 export function ProductCard({
@@ -28,6 +29,7 @@ export function ProductCard({
   stock,
   category,
   priority = false,
+  sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
 }: ProductCardProps) {
   const discount =
     comparePrice && comparePrice > price
@@ -43,7 +45,7 @@ export function ProductCard({
               src={images[0]}
               alt={name}
               fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              sizes={sizes}
               className="object-cover transition-transform group-hover:scale-105"
               priority={priority}
             />

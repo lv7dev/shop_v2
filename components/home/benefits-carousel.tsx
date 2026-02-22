@@ -36,23 +36,26 @@ const benefits = [
   },
 ];
 
+const ITEMS_PER_VIEW = 3;
+const TOTAL_SLIDES = Math.ceil(benefits.length / ITEMS_PER_VIEW);
+
 export function BenefitsCarousel() {
   const [current, setCurrent] = useState(0);
 
-  // Show 3 at a time on desktop, cycle through
-  const itemsPerView = 3;
-  const totalSlides = Math.ceil(benefits.length / itemsPerView);
-
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % totalSlides);
+      setCurrent((prev) => (prev + 1) % TOTAL_SLIDES);
     }, 4000);
     return () => clearInterval(timer);
-  }, [totalSlides]);
+  }, []);
 
   return (
-    <section className="border-y bg-muted/30 py-8">
-      <div className="mx-auto max-w-7xl px-4">
+    <section className="border-y bg-muted/30">
+      {/*
+       * Fixed height prevents CLS — the carousel always occupies the same
+       * vertical space regardless of hydration or slide transitions.
+       */}
+      <div className="mx-auto max-w-7xl px-4 py-8" style={{ minHeight: 140 }}>
         {/* Mobile: single scrollable row */}
         <div className="flex gap-6 overflow-x-auto pb-2 sm:hidden scrollbar-hide">
           {benefits.map((b) => (
@@ -73,13 +76,13 @@ export function BenefitsCarousel() {
         <div className="hidden sm:block">
           <div className="overflow-hidden">
             <div
-              className="flex transition-transform duration-500 ease-in-out"
+              className="flex will-change-transform transition-transform duration-500 ease-in-out"
               style={{ transform: `translateX(-${current * 100}%)` }}
             >
-              {Array.from({ length: totalSlides }).map((_, slideIdx) => (
+              {Array.from({ length: TOTAL_SLIDES }).map((_, slideIdx) => (
                 <div key={slideIdx} className="flex min-w-full justify-center gap-12">
                   {benefits
-                    .slice(slideIdx * itemsPerView, slideIdx * itemsPerView + itemsPerView)
+                    .slice(slideIdx * ITEMS_PER_VIEW, slideIdx * ITEMS_PER_VIEW + ITEMS_PER_VIEW)
                     .map((b) => (
                       <div
                         key={b.title}
@@ -97,14 +100,16 @@ export function BenefitsCarousel() {
             </div>
           </div>
 
-          {/* Dots indicator */}
+          {/* Dots indicator — use fixed width + opacity/scale instead of width animation to avoid layout shifts */}
           <div className="mt-6 flex justify-center gap-2">
-            {Array.from({ length: totalSlides }).map((_, i) => (
+            {Array.from({ length: TOTAL_SLIDES }).map((_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrent(i)}
-                className={`h-2 rounded-full transition-all ${
-                  i === current ? "w-6 bg-primary" : "w-2 bg-muted-foreground/30"
+                className={`h-2 w-6 rounded-full transition-all duration-300 ${
+                  i === current
+                    ? "bg-primary"
+                    : "bg-muted-foreground/30 scale-x-[0.33] origin-center"
                 }`}
                 aria-label={`Go to slide ${i + 1}`}
               />

@@ -1,12 +1,12 @@
-import * as Sentry from "@sentry/nextjs";
+import { init } from "@sentry/nextjs";
 
-Sentry.init({
+init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
   // Performance Monitoring
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
 
-  // Session Replay (optional - remove if not needed)
+  // Session Replay is lazy-loaded in instrumentation-client.ts
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
 
