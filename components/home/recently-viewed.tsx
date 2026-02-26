@@ -9,7 +9,6 @@ type Product = {
   name: string;
   slug: string;
   price: number;
-  comparePrice: number | null;
   images: string[];
   stock: number;
   category: { name: string; slug: string } | null;
@@ -45,7 +44,6 @@ export function RecentlyViewed() {
             name={product.name}
             slug={product.slug}
             price={product.price}
-            comparePrice={product.comparePrice}
             images={product.images}
             stock={product.stock}
             category={product.category}

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LayoutDashboard, Package, ShoppingCart, Users, ArrowLeft, FolderTree, Tags } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Users, ArrowLeft, FolderTree, Tags, Percent } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { requireAdmin } from "@/lib/auth";
 
@@ -13,6 +13,7 @@ const ADMIN_NAV = [
   { label: "Products", href: "/dashboard/products", icon: Package },
   { label: "Categories", href: "/dashboard/categories", icon: FolderTree },
   { label: "Facets", href: "/dashboard/facets", icon: Tags },
+  { label: "Discounts", href: "/dashboard/discounts", icon: Percent },
   { label: "Orders", href: "/dashboard/orders", icon: ShoppingCart },
   { label: "Users", href: "/dashboard/users", icon: Users },
 ] as const;

@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCartStore } from "@/store/cart-store";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { APP_NAME } from "@/lib/constants";
 import { logout } from "@/actions/auth";
 
@@ -77,6 +78,7 @@ export function Navbar({ user }: NavbarProps) {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          {user && <NotificationBell />}
           <Button variant="ghost" size="icon" asChild>
             <Link href="/cart" className="relative">
               <ShoppingCart className="size-5" />

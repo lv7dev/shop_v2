@@ -6,7 +6,6 @@ export const productSchema = z.object({
   name: z.string().min(1, "Product name is required").max(200),
   description: z.string().max(5000).optional(),
   price: z.number().min(0, "Price must be 0 or greater"),
-  comparePrice: z.number().min(0).optional(),
   sku: z.string().max(100).optional(),
   stock: z.number().int().min(0, "Stock must be 0 or greater").default(0),
   images: z.array(z.string().url("Invalid image URL")).default([]),

@@ -126,3 +126,76 @@ export async function getRelatedProducts(
     orderBy: { createdAt: "desc" },
   });
 }
+
+// ──────────────────────────────────────
+// Product Discount Helpers
+// ──────────────────────────────────────
+
+export type ProductDiscount = {
+  code: string;
+  type: "PERCENTAGE" | "FIXED";
+  value: number;
+};
+
+/**
+ * Returns a Map of productId → best active discount for those products.
+ * Includes both product-scoped discounts AND order-scoped discounts.
+ * For display purposes, product-scoped discounts take priority.
+ */
+export async function getActiveDiscountsForProducts(
+  productIds: string[]
+): Promise<Map<string, ProductDiscount>> {
+  if (productIds.length === 0) return new Map();
+
+  const now = new Date();
+
+  // Find product-scoped discounts linked to these products
+  const productDiscounts = await db.discountProduct.findMany({
+    where: {
+      productId: { in: productIds },
+      discount: {
+        isActive: true,
+        startsAt: { lte: now },
+        AND: [
+          { OR: [{ expiresAt: null }, { expiresAt: { gte: now } }] },
+        ],
+      },
+    },
+    include: {
+      discount: { select: { code: true, type: true, value: true, maxUses: true, usedCount: true } },
+    },
+  });
+
+  // Filter out discounts that have exceeded max uses (done in JS since Prisma
+  // can't compare two columns directly)
+  const validDiscounts = productDiscounts.filter(
+    (dp) => !dp.discount.maxUses || dp.discount.usedCount < dp.discount.maxUses
+  );
+
+  const discountMap = new Map<string, ProductDiscount>();
+
+  for (const dp of validDiscounts) {
+    const existing = discountMap.get(dp.productId);
+    const val = Number(dp.discount.value);
+    // Keep the highest-value discount per product
+    if (!existing || val > existing.value) {
+      discountMap.set(dp.productId, {
+        code: dp.discount.code,
+        type: dp.discount.type,
+        value: val,
+      });
+    }
+  }
+
+  return discountMap;
+}
+
+/**
+ * Returns the best active discount for a single product (product-scoped only).
+ */
+export async function getActiveDiscountForProduct(
+  productId: string
+): Promise<ProductDiscount | null> {
+  const map = await getActiveDiscountsForProducts([productId]);
+  return map.get(productId) ?? null;
+}

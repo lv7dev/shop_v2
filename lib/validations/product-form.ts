@@ -13,7 +13,6 @@ export const productFormSchema = z.object({
     (val) => !isNaN(Number(val)) && Number(val) >= 0,
     "Price must be a valid number (0 or greater)"
   ),
-  comparePrice: z.string(),
   sku: z.string().max(100),
   stock: z.string(),
   categoryId: z.string(),
@@ -34,7 +33,6 @@ export function formValuesToProductInput(
     name: values.name.trim(),
     description: values.description.trim() || undefined,
     price: Number(values.price),
-    comparePrice: values.comparePrice ? Number(values.comparePrice) : undefined,
     sku: values.sku.trim() || undefined,
     stock: Number(values.stock) || 0,
     images: images.filter((img) => img.trim()),

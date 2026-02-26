@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
-import { getProducts } from "@/services/products";
+import { getProducts, getActiveDiscountsForProducts } from "@/services/products";
 import { getCategories } from "@/services/categories";
 import { getFilterableFacets } from "@/services/facets";
 import { ProductCard } from "@/components/products/product-card";
@@ -90,6 +90,10 @@ export default async function ProductsPage({ searchParams }: Props) {
       getFilterableFacets({ categorySlug, search, activeFacets: facets }),
     ]);
 
+  // Fetch active discounts for the displayed products
+  const productIds = products.map((p) => p.id);
+  const discountMap = await getActiveDiscountsForProducts(productIds);
+
   // Build searchParams for pagination (include facet params)
   const paginationParams: Record<string, string | undefined> = {
     category: categorySlug,
@@ -142,13 +146,11 @@ export default async function ProductsPage({ searchParams }: Props) {
                     name={product.name}
                     slug={product.slug}
                     price={Number(product.price)}
-                    comparePrice={
-                      product.comparePrice ? Number(product.comparePrice) : null
-                    }
                     images={product.images}
                     stock={product.stock}
                     category={product.category}
                     priority={i < 3}
+                    activeDiscount={discountMap.get(product.id) ?? null}
                   />
                 ))}
               </div>

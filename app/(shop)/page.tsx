@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getProducts } from "@/services/products";
+import { getProducts, getActiveDiscountsForProducts } from "@/services/products";
 import { getCategories } from "@/services/categories";
 import { ProductCard } from "@/components/products/product-card";
 import { BenefitsCarousel } from "@/components/home/benefits-carousel";
@@ -22,6 +22,10 @@ export default async function HomePage() {
     getProducts({ limit: 8 }),
     getCategories(),
   ]);
+
+  // Fetch active discounts for featured products
+  const productIds = products.map((p) => p.id);
+  const discountMap = await getActiveDiscountsForProducts(productIds);
 
   return (
     <div>
@@ -100,14 +104,12 @@ export default async function HomePage() {
                   name={product.name}
                   slug={product.slug}
                   price={Number(product.price)}
-                  comparePrice={
-                    product.comparePrice ? Number(product.comparePrice) : null
-                  }
                   images={product.images}
                   stock={product.stock}
                   category={product.category}
                   sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                   priority={i < 4}
+                  activeDiscount={discountMap.get(product.id) ?? null}
                 />
               ))}
             </div>

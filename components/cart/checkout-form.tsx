@@ -1,10 +1,11 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
-import { Loader2, ShoppingBag, ShoppingCart } from "lucide-react";
+import { Loader2, ShoppingBag, ShoppingCart, Tag, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +14,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { useCartStore } from "@/store/cart-store";
 import { createOrder } from "@/actions/order";
+import { applyDiscountCode, getAutoApplyDiscounts } from "@/actions/discount";
 import {
   checkoutSchema,
   type CheckoutInput,
 } from "@/lib/validations/checkout";
+
+type AppliedDiscount = {
+  id: string;
+  code: string;
+  type: string;
+  method?: string;
+  stackable?: boolean;
+  value: number;
+  amount: number;
+  description: string | null;
+};
 
 export function CheckoutForm() {
   const router = useRouter();
@@ -24,12 +37,39 @@ export function CheckoutForm() {
   const hydrated = useCartStore((s) => s._hydrated);
   const clearCart = useCartStore((s) => s.clearCart);
 
+  const [discountCodeInput, setDiscountCodeInput] = useState("");
+  const [appliedDiscounts, setAppliedDiscounts] = useState<AppliedDiscount[]>([]);
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
+  const autoApplyRef = useRef(false);
+
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
 
+  const discountAmount = appliedDiscounts.reduce((sum, d) => sum + d.amount, 0);
   const shippingCost = totalPrice >= 100 ? 0 : 10;
-  const tax = totalPrice * 0.08;
-  const total = totalPrice + shippingCost + tax;
+  const tax = (totalPrice - discountAmount) * 0.08;
+  const total = totalPrice - discountAmount + shippingCost + tax;
+
+  const hasAutoApplied = appliedDiscounts.some((d) => d.method === "AUTO");
+  const hasManualCode = appliedDiscounts.some((d) => d.method !== "AUTO");
+
+  // Auto-apply best eligible AUTO discounts on mount
+  useEffect(() => {
+    if (autoApplyRef.current || !hydrated || items.length === 0) return;
+    autoApplyRef.current = true;
+
+    const cartItems = items.map((item) => ({
+      id: item.id,
+      quantity: item.quantity,
+      variantId: item.variantId,
+    }));
+
+    getAutoApplyDiscounts(cartItems).then((result) => {
+      if (result.success && result.discounts.length > 0) {
+        setAppliedDiscounts(result.discounts);
+      }
+    });
+  }, [hydrated, items]);
 
   const {
     register,
@@ -70,6 +110,39 @@ export function CheckoutForm() {
     );
   }
 
+  async function handleApplyDiscount() {
+    if (!discountCodeInput.trim()) return;
+    setApplyingDiscount(true);
+
+    const cartItems = items.map((item) => ({
+      id: item.id,
+      quantity: item.quantity,
+      variantId: item.variantId,
+    }));
+
+    const existingIds = appliedDiscounts.map((d) => d.id);
+    const result = await applyDiscountCode(discountCodeInput, cartItems, existingIds);
+
+    if (result.success && result.discount) {
+      if (result.replaceAll) {
+        setAppliedDiscounts([result.discount]);
+        toast.success(`Discount "${result.discount.code}" applied (replaced previous discounts)`);
+      } else {
+        setAppliedDiscounts((prev) => [...prev, result.discount!]);
+        toast.success(`Discount "${result.discount.code}" applied!`);
+      }
+      setDiscountCodeInput("");
+    } else {
+      toast.error(result.error);
+    }
+    setApplyingDiscount(false);
+  }
+
+  function handleRemoveDiscount(discountId: string) {
+    setAppliedDiscounts((prev) => prev.filter((d) => d.id !== discountId));
+    toast.info("Discount removed");
+  }
+
   async function onSubmit(values: CheckoutInput) {
     try {
       const cartItems = items.map((item) => ({
@@ -78,10 +151,15 @@ export function CheckoutForm() {
         variantId: item.variantId,
       }));
 
+      const discountCodes = appliedDiscounts.length > 0
+        ? appliedDiscounts.map((d) => d.code).join(",")
+        : undefined;
+
       const result = await createOrder(
         cartItems,
         undefined,
-        values.note || undefined
+        values.note || undefined,
+        discountCodes
       );
 
       if (!result.success) {
@@ -257,11 +335,96 @@ export function CheckoutForm() {
 
           <Separator className="my-4" />
 
+          {/* Discount section */}
+          <div className="mb-4 space-y-2">
+            {/* Applied discounts list */}
+            {appliedDiscounts.map((discount) => (
+              <div
+                key={discount.id}
+                className={`flex items-center justify-between rounded-md px-3 py-2 text-sm ${
+                  discount.method === "AUTO"
+                    ? "bg-emerald-50"
+                    : "bg-green-50"
+                }`}
+              >
+                <div className={`flex items-center gap-2 ${
+                  discount.method === "AUTO"
+                    ? "text-emerald-700"
+                    : "text-green-700"
+                }`}>
+                  {discount.method === "AUTO" ? (
+                    <Zap className="size-4" />
+                  ) : (
+                    <Tag className="size-4" />
+                  )}
+                  <span className="font-medium">{discount.code}</span>
+                  {discount.method === "AUTO" && (
+                    <span className="text-xs opacity-75">Auto</span>
+                  )}
+                  <span>-${discount.amount.toFixed(2)}</span>
+                </div>
+                {discount.method !== "AUTO" && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-6 text-green-700 hover:text-red-600"
+                    onClick={() => handleRemoveDiscount(discount.id)}
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                )}
+              </div>
+            ))}
+
+            {/* Code input — always show unless a non-stackable manual code is applied */}
+            {(!hasManualCode || appliedDiscounts.every((d) => d.stackable)) && (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Discount code"
+                  value={discountCodeInput}
+                  onChange={(e) => setDiscountCodeInput(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleApplyDiscount();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={handleApplyDiscount}
+                  disabled={applyingDiscount || !discountCodeInput.trim()}
+                >
+                  {applyingDiscount ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    "Apply"
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
               <span>${totalPrice.toFixed(2)}</span>
             </div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between text-green-600">
+                <span>
+                  Discount ({appliedDiscounts.map((d) => d.code).join(" + ")})
+                  {hasAutoApplied && (
+                    <Zap className="ml-1 inline size-3" />
+                  )}
+                </span>
+                <span>-${discountAmount.toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Shipping</span>
               <span>

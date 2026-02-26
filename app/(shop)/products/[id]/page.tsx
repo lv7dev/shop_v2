@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, Star, Package, Truck, ShieldCheck } from "lucide-react";
-import { getProductBySlug, getRelatedProducts } from "@/services/products";
+import { ChevronRight, Star, Package, Truck, ShieldCheck, Tag } from "lucide-react";
+import { getProductBySlug, getRelatedProducts, getActiveDiscountForProduct, getActiveDiscountsForProducts } from "@/services/products";
 import { ProductImageGallery } from "@/components/products/product-image-gallery";
 import { AddToCartButton } from "@/components/products/add-to-cart-button";
 import { VariantPicker } from "@/components/products/variant-picker";
@@ -56,19 +56,16 @@ export default async function ProductDetailPage({ params }: Props) {
 
   if (!product) notFound();
 
-  const relatedProducts = await getRelatedProducts(
-    product.id,
-    product.categoryId
-  );
+  const [relatedProducts, activeDiscount] = await Promise.all([
+    getRelatedProducts(product.id, product.categoryId),
+    getActiveDiscountForProduct(product.id),
+  ]);
+
+  // Fetch discounts for related products
+  const relatedIds = relatedProducts.map((rp) => rp.id);
+  const relatedDiscountMap = await getActiveDiscountsForProducts(relatedIds);
 
   const price = Number(product.price);
-  const comparePrice = product.comparePrice
-    ? Number(product.comparePrice)
-    : null;
-  const discount =
-    comparePrice && comparePrice > price
-      ? Math.round(((comparePrice - price) / comparePrice) * 100)
-      : null;
 
   const avgRating =
     product.reviews && product.reviews.length > 0
@@ -278,19 +275,30 @@ export default async function ProductDetailPage({ params }: Props) {
                 </span>
               )
             ) : (
-              <>
-                <span className="text-3xl font-bold">{formatPrice(price)}</span>
-                {comparePrice && comparePrice > price && (
-                  <>
-                    <span className="text-lg text-muted-foreground line-through">
-                      {formatPrice(comparePrice)}
-                    </span>
-                    <Badge variant="destructive">-{discount}%</Badge>
-                  </>
-                )}
-              </>
+              <span className="text-3xl font-bold">{formatPrice(price)}</span>
             )}
           </div>
+
+          {/* Active discount banner */}
+          {activeDiscount && (
+            <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800 dark:bg-green-950/30">
+              <Tag className="size-5 text-green-600 dark:text-green-400" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-green-700 dark:text-green-400">
+                  {activeDiscount.type === "PERCENTAGE"
+                    ? `${activeDiscount.value}% OFF`
+                    : `$${activeDiscount.value} OFF`}{" "}
+                  with code{" "}
+                  <span className="rounded bg-green-100 px-1.5 py-0.5 font-mono text-green-800 dark:bg-green-900 dark:text-green-300">
+                    {activeDiscount.code}
+                  </span>
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-500">
+                  Apply this code at checkout to get your discount
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Description */}
           {product.description && (
@@ -460,12 +468,10 @@ export default async function ProductDetailPage({ params }: Props) {
                 name={rp.name}
                 slug={rp.slug}
                 price={Number(rp.price)}
-                comparePrice={
-                  rp.comparePrice ? Number(rp.comparePrice) : null
-                }
                 images={rp.images}
                 stock={rp.stock}
                 category={rp.category}
+                activeDiscount={relatedDiscountMap.get(rp.id) ?? null}
               />
             ))}
           </div>

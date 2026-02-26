@@ -58,7 +58,6 @@ type ProductData = {
   name: string;
   description: string | null;
   price: number;
-  comparePrice: number | null;
   sku: string | null;
   stock: number;
   images: string[];
@@ -90,7 +89,6 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
       name: product?.name ?? "",
       description: product?.description ?? "",
       price: product?.price?.toString() ?? "",
-      comparePrice: product?.comparePrice?.toString() ?? "",
       sku: product?.sku ?? "",
       stock: product?.stock?.toString() ?? "0",
       categoryId: product?.categoryId ?? "",
@@ -285,32 +283,19 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
                 Each variant can override it.
               </p>
             )}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="price">Price *</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...register("price")}
-                  placeholder="0.00"
-                />
-                {errors.price && (
-                  <p className="text-sm text-destructive">{errors.price.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="comparePrice">Compare-at Price</Label>
-                <Input
-                  id="comparePrice"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...register("comparePrice")}
-                  placeholder="0.00"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="price">Price *</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                min="0"
+                {...register("price")}
+                placeholder="0.00"
+              />
+              {errors.price && (
+                <p className="text-sm text-destructive">{errors.price.message}</p>
+              )}
             </div>
           </div>
 

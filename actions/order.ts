@@ -16,6 +16,7 @@ function serializeOrder(order: Record<string, unknown>) {
     subtotal: Number(order.subtotal),
     shippingCost: Number(order.shippingCost),
     tax: Number(order.tax),
+    discountAmount: Number(order.discountAmount),
     total: Number(order.total),
     items: Array.isArray(order.items)
       ? order.items.map((item: Record<string, unknown>) => ({
@@ -29,14 +30,15 @@ function serializeOrder(order: Record<string, unknown>) {
 export async function createOrder(
   items: unknown,
   addressId?: string,
-  note?: string
+  note?: string,
+  discountCode?: string
 ) {
   const session = await getSession();
   if (!session) {
     return { success: false, error: "Please sign in to place an order" };
   }
 
-  const parsed = createOrderSchema.safeParse({ items, addressId, note });
+  const parsed = createOrderSchema.safeParse({ items, addressId, note, discountCode });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
   }
@@ -125,9 +127,75 @@ export async function createOrder(
       (sum, item) => sum + Number(item.price) * item.quantity,
       0
     );
+
+    // Validate and calculate discounts (supports multiple comma-separated codes)
+    const validDiscountIds: string[] = [];
+    const validDiscountCodes: string[] = [];
+    let discountAmount = 0;
+
+    if (input.discountCode) {
+      const codes = input.discountCode
+        .split(",")
+        .map((c) => c.toUpperCase().trim())
+        .filter(Boolean);
+
+      const discounts = await db.discount.findMany({
+        where: { code: { in: codes } },
+        include: { products: true },
+      });
+
+      const now = new Date();
+
+      for (const discount of discounts) {
+        if (!discount.isActive) continue;
+
+        const isValid =
+          discount.startsAt <= now &&
+          (!discount.expiresAt || discount.expiresAt >= now) &&
+          (!discount.maxUses || discount.usedCount < discount.maxUses) &&
+          (!discount.minOrder || subtotal >= Number(discount.minOrder));
+
+        if (!isValid) continue;
+
+        // Check stacking: if multiple discounts, all must be stackable
+        if (discounts.length > 1 && !discount.stackable) continue;
+
+        let amount = 0;
+        if (discount.scope === "ORDER") {
+          amount =
+            discount.type === "PERCENTAGE"
+              ? subtotal * (Number(discount.value) / 100)
+              : Math.min(Number(discount.value), subtotal);
+        } else {
+          const eligibleIds = new Set(
+            discount.products.map((dp) => dp.productId)
+          );
+          const eligibleSubtotal = orderItems.reduce((sum, oi) => {
+            if (!eligibleIds.has(oi.productId)) return sum;
+            return sum + Number(oi.price) * oi.quantity;
+          }, 0);
+          amount =
+            discount.type === "PERCENTAGE"
+              ? eligibleSubtotal * (Number(discount.value) / 100)
+              : Math.min(Number(discount.value), eligibleSubtotal);
+        }
+
+        amount = Math.round(amount * 100) / 100;
+        if (amount > 0) {
+          validDiscountIds.push(discount.id);
+          validDiscountCodes.push(discount.code);
+          discountAmount += amount;
+        }
+      }
+
+      // Cap total discount at subtotal
+      discountAmount = Math.min(discountAmount, subtotal);
+      discountAmount = Math.round(discountAmount * 100) / 100;
+    }
+
     const shippingCost = subtotal >= 100 ? 0 : 10;
-    const tax = subtotal * 0.08;
-    const total = subtotal + shippingCost + tax;
+    const tax = (subtotal - discountAmount) * 0.08;
+    const total = subtotal - discountAmount + shippingCost + tax;
 
     // Create order and decrement stock in a transaction
     const order = await db.$transaction(async (tx) => {
@@ -146,6 +214,14 @@ export async function createOrder(
         }
       }
 
+      // Increment discount usage for all applied discounts
+      for (const dId of validDiscountIds) {
+        await tx.discount.update({
+          where: { id: dId },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+
       return tx.order.create({
         data: {
           userId,
@@ -153,6 +229,11 @@ export async function createOrder(
           subtotal,
           shippingCost,
           tax,
+          discountId: validDiscountIds[0] ?? null,
+          discountCode: validDiscountCodes.length > 0
+            ? validDiscountCodes.join(",")
+            : null,
+          discountAmount,
           total,
           note: input.note,
           items: {

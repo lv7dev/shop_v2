@@ -24,7 +24,6 @@ export async function GET(request: NextRequest) {
       name: p!.name,
       slug: p!.slug,
       price: Number(p!.price),
-      comparePrice: p!.comparePrice ? Number(p!.comparePrice) : null,
       images: p!.images,
       stock: p!.stock,
       category: p!.category ? { name: p!.category.name, slug: p!.category.slug } : null,

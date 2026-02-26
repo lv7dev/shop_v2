@@ -12,6 +12,7 @@ import {
   LogOut,
   LogIn,
   UserPlus,
+  Bell,
 } from "lucide-react";
 import {
   SheetContent,
@@ -19,6 +20,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
+import { useNotificationStore } from "@/store/notification-store";
 import { APP_NAME } from "@/lib/constants";
 
 const NAV_ITEMS = [
@@ -47,6 +49,9 @@ export function MobileMenu({
   onClose,
   onLogout,
 }: MobileMenuProps) {
+  const unreadCount = useNotificationStore((s) => s.unreadCount());
+  const notifHydrated = useNotificationStore((s) => s._hydrated);
+
   return (
     <SheetContent side="right" className="w-80 p-0">
       <SheetHeader className="border-b px-6 py-4">
@@ -96,6 +101,21 @@ export function MobileMenu({
               </span>
             )}
           </Link>
+          {user && (
+            <Link
+              href="#"
+              onClick={onClose}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+            >
+              <Bell className="size-4 text-muted-foreground" />
+              Notifications
+              {notifHydrated && unreadCount > 0 && (
+                <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </Link>
+          )}
         </nav>
 
         <Separator className="mx-4" />

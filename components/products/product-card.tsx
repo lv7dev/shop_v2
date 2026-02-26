@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Tag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProductImage } from "@/components/ui/product-image";
@@ -11,12 +11,16 @@ type ProductCardProps = {
   name: string;
   slug: string;
   price: number;
-  comparePrice: number | null;
   images: string[];
   stock: number;
   category?: { name: string; slug: string } | null;
   priority?: boolean;
   sizes?: string;
+  activeDiscount?: {
+    code: string;
+    type: "PERCENTAGE" | "FIXED";
+    value: number;
+  } | null;
 };
 
 export function ProductCard({
@@ -24,17 +28,18 @@ export function ProductCard({
   name,
   slug,
   price,
-  comparePrice,
   images,
   stock,
   category,
   priority = false,
   sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
+  activeDiscount,
 }: ProductCardProps) {
-  const discount =
-    comparePrice && comparePrice > price
-      ? Math.round(((comparePrice - price) / comparePrice) * 100)
-      : null;
+  const discountLabel = activeDiscount
+    ? activeDiscount.type === "PERCENTAGE"
+      ? `${activeDiscount.value}% OFF`
+      : `$${activeDiscount.value} OFF`
+    : null;
 
   return (
     <Card className="group overflow-hidden py-0 transition-shadow hover:shadow-md">
@@ -54,9 +59,10 @@ export function ProductCard({
               <ShoppingCart className="size-12" />
             </div>
           )}
-          {discount && (
-            <Badge className="absolute left-2 top-2" variant="destructive">
-              -{discount}%
+          {activeDiscount && (
+            <Badge className="absolute left-2 top-2 flex items-center gap-1 bg-green-600 hover:bg-green-700">
+              <Tag className="size-3" />
+              {discountLabel}
             </Badge>
           )}
           {stock === 0 && (
@@ -85,12 +91,13 @@ export function ProductCard({
         </Link>
         <div className="flex items-center gap-2">
           <span className="text-lg font-bold">{formatPrice(price)}</span>
-          {comparePrice && comparePrice > price && (
-            <span className="text-sm text-muted-foreground line-through">
-              {formatPrice(comparePrice)}
-            </span>
-          )}
         </div>
+        {activeDiscount && (
+          <div className="flex items-center gap-1.5 rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 dark:bg-green-950/30 dark:text-green-400">
+            <Tag className="size-3" />
+            Use code <span className="font-bold">{activeDiscount.code}</span> for {discountLabel}
+          </div>
+        )}
         <AddToCartButton
           product={{ id, name, price, image: images[0] ?? "", stock }}
         />

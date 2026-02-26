@@ -85,3 +85,25 @@ export async function getAdminUsers() {
     orderBy: { createdAt: "desc" },
   });
 }
+
+export async function getAdminDiscounts() {
+  return db.discount.findMany({
+    include: {
+      products: {
+        include: { product: { select: { id: true, name: true } } },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function getAdminDiscountById(id: string) {
+  return db.discount.findUnique({
+    where: { id },
+    include: {
+      products: {
+        include: { product: { select: { id: true, name: true } } },
+      },
+    },
+  });
+}

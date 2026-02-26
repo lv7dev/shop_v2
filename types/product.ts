@@ -4,7 +4,6 @@ export type Product = {
   slug: string;
   description: string | null;
   price: number;
-  comparePrice: number | null;
   sku: string | null;
   stock: number;
   images: string[];

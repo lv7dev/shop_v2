@@ -10,6 +10,7 @@ export const createOrderSchema = z.object({
   items: z.array(cartItemInputSchema).min(1, "Cart is empty"),
   addressId: z.string().optional(),
   note: z.string().max(1000).optional(),
+  discountCode: z.string().optional(),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;

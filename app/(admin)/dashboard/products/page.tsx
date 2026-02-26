@@ -100,11 +100,6 @@ export default async function AdminProductsPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     {formatPrice(Number(product.price))}
-                    {product.comparePrice && (
-                      <span className="ml-1 text-xs text-muted-foreground line-through">
-                        {formatPrice(Number(product.comparePrice))}
-                      </span>
-                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <span

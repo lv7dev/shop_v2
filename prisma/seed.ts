@@ -183,7 +183,7 @@ async function main() {
       slug: "wireless-headphones",
       description: "Premium noise-cancelling wireless headphones with 30-hour battery life and superior sound quality.",
       price: 149.99,
-      comparePrice: 199.99,
+      // comparePrice: 199.99,
       sku: "WH-001",
       stock: 50,
       images: [
@@ -236,7 +236,7 @@ async function main() {
       slug: "bluetooth-speaker",
       description: "Portable waterproof Bluetooth speaker with 360-degree sound and 12-hour playtime.",
       price: 79.99,
-      comparePrice: 99.99,
+      // comparePrice: 99.99,
       sku: "BS-001",
       stock: 75,
       images: [
@@ -289,7 +289,7 @@ async function main() {
       slug: "cotton-t-shirt",
       description: "Comfortable 100% organic cotton t-shirt with a relaxed fit.",
       price: 24.99,
-      comparePrice: 34.99,
+      // comparePrice: 34.99,
       sku: "TS-001",
       stock: 0,
       images: [
@@ -308,7 +308,7 @@ async function main() {
       slug: "denim-jeans",
       description: "Classic slim-fit denim jeans with stretch comfort technology.",
       price: 59.99,
-      comparePrice: 79.99,
+      // comparePrice: 79.99,
       sku: "DJ-001",
       stock: 90,
       images: [
@@ -326,7 +326,7 @@ async function main() {
       slug: "running-shoes",
       description: "Lightweight running shoes with responsive cushioning for long-distance comfort.",
       price: 89.99,
-      comparePrice: 119.99,
+      // comparePrice: 119.99,
       sku: "RS-001",
       stock: 60,
       images: [
@@ -396,7 +396,7 @@ async function main() {
       slug: "coffee-maker",
       description: "12-cup programmable coffee maker with built-in grinder and thermal carafe.",
       price: 69.99,
-      comparePrice: 89.99,
+      // comparePrice: 89.99,
       sku: "CM-001",
       stock: 40,
       images: [
@@ -448,7 +448,7 @@ async function main() {
       slug: "backpack",
       description: "Durable water-resistant backpack with laptop compartment and multiple pockets.",
       price: 54.99,
-      comparePrice: 69.99,
+      // comparePrice: 69.99,
       sku: "BP-001",
       stock: 70,
       images: [
@@ -500,7 +500,7 @@ async function main() {
       slug: "fitness-tracker",
       description: "Advanced fitness tracker with heart rate monitor, GPS, and 7-day battery life.",
       price: 99.99,
-      comparePrice: 129.99,
+      // comparePrice: 129.99,
       sku: "FT-001",
       stock: 55,
       images: [

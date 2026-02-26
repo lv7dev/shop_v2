@@ -10,7 +10,6 @@ function serializeProduct(product: Record<string, unknown>) {
   return {
     ...product,
     price: Number(product.price),
-    comparePrice: product.comparePrice ? Number(product.comparePrice) : null,
   };
 }
 
@@ -47,7 +46,6 @@ export async function createProduct(data: unknown) {
         slug,
         description: input.description || null,
         price: input.price,
-        comparePrice: input.comparePrice ?? null,
         sku: input.sku || null,
         stock: input.stock,
         images: input.images,
@@ -108,7 +106,6 @@ export async function updateProduct(id: string, data: unknown) {
 
   if (input.description !== undefined) updateData.description = input.description || null;
   if (input.price !== undefined) updateData.price = input.price;
-  if (input.comparePrice !== undefined) updateData.comparePrice = input.comparePrice ?? null;
   if (input.sku !== undefined) {
     if (input.sku) {
       const existingSku = await db.product.findFirst({
