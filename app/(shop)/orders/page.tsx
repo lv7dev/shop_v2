@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { getOrdersByUserId } from "@/services/orders";
 import { requireAuth } from "@/lib/auth";
 import { formatPrice } from "@/lib/utils";
-import { ORDER_STATUS_LABELS } from "@/lib/constants";
+import { ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Orders",
@@ -73,9 +73,17 @@ export default async function OrdersPage() {
                     })}
                   </p>
                 </div>
-                <span className="text-lg font-semibold">
-                  {formatPrice(Number(order.total))}
-                </span>
+                <div className="text-right">
+                  <span className="text-lg font-semibold">
+                    {formatPrice(Number(order.total), order.currency)}
+                  </span>
+                  {order.paymentMethod !== "COD" && (
+                    <p className="text-xs text-muted-foreground">
+                      {PAYMENT_METHOD_LABELS[order.paymentMethod]} &middot;{" "}
+                      {PAYMENT_STATUS_LABELS[order.paymentStatus]}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Item thumbnails */}

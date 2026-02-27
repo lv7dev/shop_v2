@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LayoutDashboard, Package, ShoppingCart, Users, ArrowLeft, FolderTree, Tags, Percent } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Users, ArrowLeft, FolderTree, Tags, Percent, Settings } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { requireAdmin } from "@/lib/auth";
 
@@ -16,6 +16,7 @@ const ADMIN_NAV = [
   { label: "Discounts", href: "/dashboard/discounts", icon: Percent },
   { label: "Orders", href: "/dashboard/orders", icon: ShoppingCart },
   { label: "Users", href: "/dashboard/users", icon: Users },
+  { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ] as const;
 
 export default async function AdminLayout({

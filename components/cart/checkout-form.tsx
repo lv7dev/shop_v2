@@ -12,13 +12,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useCartStore } from "@/store/cart-store";
 import { createOrder } from "@/actions/order";
+import { createAddress } from "@/actions/address";
 import { applyDiscountCode, getAutoApplyDiscounts } from "@/actions/discount";
 import {
   checkoutSchema,
   type CheckoutInput,
 } from "@/lib/validations/checkout";
+import { CheckoutAddressSelector } from "./checkout-address-selector";
+import { PaymentMethodSelector } from "./payment-method-selector";
+import type { PaymentMethodType } from "@/lib/validations/checkout";
+
+type Address = {
+  id: string;
+  name: string;
+  phone: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  isDefault: boolean;
+};
 
 type AppliedDiscount = {
   id: string;
@@ -31,16 +48,38 @@ type AppliedDiscount = {
   description: string | null;
 };
 
-export function CheckoutForm() {
+type CheckoutFormProps = {
+  addresses?: Address[];
+  isAuthenticated?: boolean;
+  enabledPaymentMethods?: string[];
+};
+
+export function CheckoutForm({
+  addresses = [],
+  isAuthenticated = false,
+  enabledPaymentMethods = ["COD"],
+}: CheckoutFormProps) {
   const router = useRouter();
   const items = useCartStore((s) => s.items);
   const hydrated = useCartStore((s) => s._hydrated);
   const clearCart = useCartStore((s) => s.clearCart);
 
+  const defaultMethod = (enabledPaymentMethods[0] ?? "COD") as PaymentMethodType;
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>(defaultMethod);
   const [discountCodeInput, setDiscountCodeInput] = useState("");
   const [appliedDiscounts, setAppliedDiscounts] = useState<AppliedDiscount[]>([]);
   const [applyingDiscount, setApplyingDiscount] = useState(false);
   const autoApplyRef = useRef(false);
+
+  // Address selection state
+  const defaultAddress = addresses.find((a) => a.isDefault);
+  const initialAddress = defaultAddress ?? (addresses.length > 0 ? addresses[0] : null);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+    initialAddress?.id ?? null
+  );
+  const [saveNewAddress, setSaveNewAddress] = useState(false);
+
+  const isNewAddress = selectedAddressId === null;
 
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
@@ -74,22 +113,47 @@ export function CheckoutForm() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CheckoutInput>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
       shipping: {
-        name: "",
-        phone: "",
-        street: "",
-        city: "",
-        state: "",
-        zipCode: "",
-        country: "",
+        name: initialAddress?.name ?? "",
+        phone: initialAddress?.phone ?? "",
+        street: initialAddress?.street ?? "",
+        city: initialAddress?.city ?? "",
+        state: initialAddress?.state ?? "",
+        zipCode: initialAddress?.zipCode ?? "",
+        country: initialAddress?.country ?? "",
       },
       note: "",
+      paymentMethod: defaultMethod,
     },
   });
+
+  function handleAddressSelect(address: Address | null) {
+    if (address) {
+      setSelectedAddressId(address.id);
+      setSaveNewAddress(false);
+      setValue("shipping.name", address.name, { shouldValidate: true });
+      setValue("shipping.phone", address.phone || "", { shouldValidate: true });
+      setValue("shipping.street", address.street, { shouldValidate: true });
+      setValue("shipping.city", address.city, { shouldValidate: true });
+      setValue("shipping.state", address.state, { shouldValidate: true });
+      setValue("shipping.zipCode", address.zipCode, { shouldValidate: true });
+      setValue("shipping.country", address.country, { shouldValidate: true });
+    } else {
+      setSelectedAddressId(null);
+      setValue("shipping.name", "");
+      setValue("shipping.phone", "");
+      setValue("shipping.street", "");
+      setValue("shipping.city", "");
+      setValue("shipping.state", "");
+      setValue("shipping.zipCode", "");
+      setValue("shipping.country", "");
+    }
+  }
 
   if (!hydrated) {
     return <div className="h-96 animate-pulse rounded-lg bg-muted" />;
@@ -155,11 +219,26 @@ export function CheckoutForm() {
         ? appliedDiscounts.map((d) => d.code).join(",")
         : undefined;
 
+      // Determine addressId
+      let addressIdForOrder = selectedAddressId;
+
+      // If entering a new address and user wants to save it, create it first
+      if (isNewAddress && saveNewAddress && isAuthenticated) {
+        const saveResult = await createAddress({
+          ...values.shipping,
+          phone: values.shipping.phone || "",
+        });
+        if (saveResult.success && saveResult.address) {
+          addressIdForOrder = saveResult.address.id;
+        }
+      }
+
       const result = await createOrder(
         cartItems,
-        undefined,
+        addressIdForOrder || undefined,
         values.note || undefined,
-        discountCodes
+        discountCodes,
+        paymentMethod
       );
 
       if (!result.success) {
@@ -167,10 +246,39 @@ export function CheckoutForm() {
         return;
       }
 
-      clearCart();
-      toast.success("Order placed successfully!");
       const order = result.order as unknown as { id: string };
-      router.push(`/orders/${order.id}?new=true`);
+
+      if (paymentMethod === "COD") {
+        clearCart();
+        toast.success("Order placed successfully!");
+        router.push(`/orders/${order.id}?new=true`);
+      } else if (paymentMethod === "STRIPE") {
+        const res = await fetch("/api/checkout/stripe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: order.id }),
+        });
+        const data = await res.json();
+        if (data.url) {
+          clearCart();
+          window.location.href = data.url;
+        } else {
+          toast.error("Failed to initiate payment. Please try again.");
+        }
+      } else if (paymentMethod === "MOMO") {
+        const res = await fetch("/api/checkout/momo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: order.id }),
+        });
+        const data = await res.json();
+        if (data.payUrl) {
+          clearCart();
+          window.location.href = data.payUrl;
+        } else {
+          toast.error("Failed to initiate MoMo payment. Please try again.");
+        }
+      }
     } catch {
       toast.error("Something went wrong. Please try again.");
     }
@@ -182,6 +290,16 @@ export function CheckoutForm() {
       <div className="space-y-6 lg:col-span-3">
         <div className="rounded-lg border p-6">
           <h2 className="mb-4 text-lg font-semibold">Shipping Address</h2>
+
+          {/* Saved address selector */}
+          {addresses.length > 0 && (
+            <CheckoutAddressSelector
+              addresses={addresses}
+              selectedAddressId={selectedAddressId}
+              onSelect={handleAddressSelect}
+            />
+          )}
+
           <div className="grid gap-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -190,6 +308,8 @@ export function CheckoutForm() {
                   id="name"
                   {...register("shipping.name")}
                   placeholder="John Doe"
+                  readOnly={!isNewAddress}
+                  className={!isNewAddress ? "bg-muted" : ""}
                 />
                 {errors.shipping?.name && (
                   <p className="text-sm text-destructive">
@@ -203,6 +323,8 @@ export function CheckoutForm() {
                   id="phone"
                   {...register("shipping.phone")}
                   placeholder="+1 (555) 123-4567"
+                  readOnly={!isNewAddress}
+                  className={!isNewAddress ? "bg-muted" : ""}
                 />
               </div>
             </div>
@@ -213,6 +335,8 @@ export function CheckoutForm() {
                 id="street"
                 {...register("shipping.street")}
                 placeholder="123 Main St"
+                readOnly={!isNewAddress}
+                className={!isNewAddress ? "bg-muted" : ""}
               />
               {errors.shipping?.street && (
                 <p className="text-sm text-destructive">
@@ -228,6 +352,8 @@ export function CheckoutForm() {
                   id="city"
                   {...register("shipping.city")}
                   placeholder="New York"
+                  readOnly={!isNewAddress}
+                  className={!isNewAddress ? "bg-muted" : ""}
                 />
                 {errors.shipping?.city && (
                   <p className="text-sm text-destructive">
@@ -241,6 +367,8 @@ export function CheckoutForm() {
                   id="state"
                   {...register("shipping.state")}
                   placeholder="NY"
+                  readOnly={!isNewAddress}
+                  className={!isNewAddress ? "bg-muted" : ""}
                 />
                 {errors.shipping?.state && (
                   <p className="text-sm text-destructive">
@@ -254,6 +382,8 @@ export function CheckoutForm() {
                   id="zipCode"
                   {...register("shipping.zipCode")}
                   placeholder="10001"
+                  readOnly={!isNewAddress}
+                  className={!isNewAddress ? "bg-muted" : ""}
                 />
                 {errors.shipping?.zipCode && (
                   <p className="text-sm text-destructive">
@@ -269,6 +399,8 @@ export function CheckoutForm() {
                 id="country"
                 {...register("shipping.country")}
                 placeholder="United States"
+                readOnly={!isNewAddress}
+                className={!isNewAddress ? "bg-muted" : ""}
               />
               {errors.shipping?.country && (
                 <p className="text-sm text-destructive">
@@ -276,6 +408,25 @@ export function CheckoutForm() {
                 </p>
               )}
             </div>
+
+            {/* Save address checkbox - only for authenticated users entering a new address */}
+            {isAuthenticated && isNewAddress && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="save-address"
+                  checked={saveNewAddress}
+                  onCheckedChange={(checked) =>
+                    setSaveNewAddress(checked === true)
+                  }
+                />
+                <Label
+                  htmlFor="save-address"
+                  className="cursor-pointer text-sm"
+                >
+                  Save this address for future orders
+                </Label>
+              </div>
+            )}
           </div>
         </div>
 
@@ -290,6 +441,17 @@ export function CheckoutForm() {
             <p className="text-sm text-destructive">{errors.note.message}</p>
           )}
         </div>
+
+        {enabledPaymentMethods.length > 1 && (
+          <PaymentMethodSelector
+            value={paymentMethod}
+            enabledMethods={enabledPaymentMethods}
+            onChange={(v) => {
+              setPaymentMethod(v as PaymentMethodType);
+              setValue("paymentMethod", v as PaymentMethodType);
+            }}
+          />
+        )}
       </div>
 
       {/* Order review */}
@@ -454,13 +616,19 @@ export function CheckoutForm() {
                 <Loader2 className="size-4 animate-spin" />
                 Processing...
               </>
+            ) : paymentMethod === "STRIPE" ? (
+              `Pay with Card - $${total.toFixed(2)}`
+            ) : paymentMethod === "MOMO" ? (
+              `Pay with MoMo - $${total.toFixed(2)}`
             ) : (
               `Place Order - $${total.toFixed(2)}`
             )}
           </Button>
 
           <p className="mt-3 text-center text-xs text-muted-foreground">
-            Payment will be collected on delivery (COD)
+            {paymentMethod === "COD" && "Payment will be collected on delivery"}
+            {paymentMethod === "STRIPE" && "You will be redirected to Stripe to complete payment"}
+            {paymentMethod === "MOMO" && "You will be redirected to MoMo to complete payment"}
           </p>
         </div>
       </div>

@@ -11,6 +11,7 @@ export const createOrderSchema = z.object({
   addressId: z.string().optional(),
   note: z.string().max(1000).optional(),
   discountCode: z.string().optional(),
+  paymentMethod: z.enum(["COD", "STRIPE", "MOMO"]).default("COD"),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;

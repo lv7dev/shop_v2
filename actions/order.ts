@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { getSession, requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import * as Sentry from "@sentry/nextjs";
-import type { OrderStatus } from "@/lib/generated/prisma/client";
+import type { OrderStatus, PaymentMethod } from "@/lib/generated/prisma/client";
 import {
   createOrderSchema,
   orderStatusSchema,
@@ -31,14 +31,15 @@ export async function createOrder(
   items: unknown,
   addressId?: string,
   note?: string,
-  discountCode?: string
+  discountCode?: string,
+  paymentMethod: string = "COD"
 ) {
   const session = await getSession();
   if (!session) {
     return { success: false, error: "Please sign in to place an order" };
   }
 
-  const parsed = createOrderSchema.safeParse({ items, addressId, note, discountCode });
+  const parsed = createOrderSchema.safeParse({ items, addressId, note, discountCode, paymentMethod });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
   }
@@ -236,6 +237,12 @@ export async function createOrder(
           discountAmount,
           total,
           note: input.note,
+          paymentMethod: input.paymentMethod as PaymentMethod,
+          paymentStatus: "PENDING",
+          currency: input.paymentMethod === "MOMO" ? "VND" : "USD",
+          paymentExpiry: input.paymentMethod !== "COD"
+            ? new Date(Date.now() + 30 * 60 * 1000)
+            : null,
           items: {
             create: orderItems.map((oi) => ({
               productId: oi.productId,

@@ -12,9 +12,13 @@ export const shippingSchema = z.object({
 
 export type ShippingInput = z.infer<typeof shippingSchema>;
 
+export const paymentMethodSchema = z.enum(["COD", "STRIPE", "MOMO"]);
+export type PaymentMethodType = z.infer<typeof paymentMethodSchema>;
+
 export const checkoutSchema = z.object({
   shipping: shippingSchema,
   note: z.string().max(1000).optional(),
+  paymentMethod: paymentMethodSchema,
 });
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>;

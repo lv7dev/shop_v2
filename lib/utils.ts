@@ -5,13 +5,20 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
+const usdFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 });
 
-export function formatPrice(price: number) {
-  return currencyFormatter.format(price);
+const vndFormatter = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+  minimumFractionDigits: 0,
+});
+
+export function formatPrice(price: number, currency: string = "USD") {
+  if (currency === "VND") return vndFormatter.format(price);
+  return usdFormatter.format(price);
 }
 
 export function relativeTime(date: Date): string {

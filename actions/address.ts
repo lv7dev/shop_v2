@@ -1,22 +1,40 @@
 "use server";
 
 import { db } from "@/lib/db";
+import { getSession } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { addressSchema } from "@/lib/validations/address";
 
-type AddressInput = {
-  name: string;
-  phone: string;
-  street: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
-  isDefault?: boolean;
-};
+export async function getAddresses() {
+  const session = await getSession();
+  if (!session) {
+    return { success: false as const, error: "Not authenticated", addresses: [] };
+  }
 
-export async function createAddress(userId: string, data: AddressInput) {
+  const addresses = await db.address.findMany({
+    where: { userId: session.userId },
+    orderBy: [{ isDefault: "desc" }, { id: "desc" }],
+  });
+
+  return { success: true as const, addresses };
+}
+
+export async function createAddress(data: unknown) {
+  const session = await getSession();
+  if (!session) {
+    return { success: false as const, error: "Not authenticated" };
+  }
+
+  const parsed = addressSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false as const, error: parsed.error.issues[0].message };
+  }
+
+  const userId = session.userId;
+  const input = parsed.data;
+
   // If this is set as default, unset any existing default
-  if (data.isDefault) {
+  if (input.isDefault) {
     await db.address.updateMany({
       where: { userId, isDefault: true },
       data: { isDefault: false },
@@ -25,18 +43,18 @@ export async function createAddress(userId: string, data: AddressInput) {
 
   // If this is the user's first address, make it default
   const addressCount = await db.address.count({ where: { userId } });
-  const isDefault = data.isDefault ?? addressCount === 0;
+  const isDefault = input.isDefault ?? addressCount === 0;
 
   const address = await db.address.create({
     data: {
       userId,
-      name: data.name,
-      phone: data.phone,
-      street: data.street,
-      city: data.city,
-      state: data.state,
-      zipCode: data.zipCode,
-      country: data.country,
+      name: input.name,
+      phone: input.phone || "",
+      street: input.street,
+      city: input.city,
+      state: input.state,
+      zipCode: input.zipCode,
+      country: input.country,
       isDefault,
     },
   });
@@ -44,23 +62,32 @@ export async function createAddress(userId: string, data: AddressInput) {
   revalidatePath("/account");
   revalidatePath("/checkout");
 
-  return { success: true, address };
+  return { success: true as const, address };
 }
 
-export async function updateAddress(
-  addressId: string,
-  userId: string,
-  data: Partial<AddressInput>
-) {
+export async function updateAddress(addressId: string, data: unknown) {
+  const session = await getSession();
+  if (!session) {
+    return { success: false as const, error: "Not authenticated" };
+  }
+
+  const parsed = addressSchema.partial().safeParse(data);
+  if (!parsed.success) {
+    return { success: false as const, error: parsed.error.issues[0].message };
+  }
+
+  const userId = session.userId;
+  const input = parsed.data;
+
   const address = await db.address.findFirst({
     where: { id: addressId, userId },
   });
 
   if (!address) {
-    return { success: false, error: "Address not found" };
+    return { success: false as const, error: "Address not found" };
   }
 
-  if (data.isDefault) {
+  if (input.isDefault) {
     await db.address.updateMany({
       where: { userId, isDefault: true, id: { not: addressId } },
       data: { isDefault: false },
@@ -69,22 +96,32 @@ export async function updateAddress(
 
   const updated = await db.address.update({
     where: { id: addressId },
-    data,
+    data: {
+      ...input,
+      phone: input.phone || "",
+    },
   });
 
   revalidatePath("/account");
   revalidatePath("/checkout");
 
-  return { success: true, address: updated };
+  return { success: true as const, address: updated };
 }
 
-export async function deleteAddress(addressId: string, userId: string) {
+export async function deleteAddress(addressId: string) {
+  const session = await getSession();
+  if (!session) {
+    return { success: false as const, error: "Not authenticated" };
+  }
+
+  const userId = session.userId;
+
   const address = await db.address.findFirst({
     where: { id: addressId, userId },
   });
 
   if (!address) {
-    return { success: false, error: "Address not found" };
+    return { success: false as const, error: "Address not found" };
   }
 
   // Check if address is used in any orders
@@ -93,7 +130,7 @@ export async function deleteAddress(addressId: string, userId: string) {
   });
   if (orderCount > 0) {
     return {
-      success: false,
+      success: false as const,
       error: "Cannot delete address used in existing orders",
     };
   }
@@ -117,16 +154,23 @@ export async function deleteAddress(addressId: string, userId: string) {
   revalidatePath("/account");
   revalidatePath("/checkout");
 
-  return { success: true };
+  return { success: true as const };
 }
 
-export async function setDefaultAddress(addressId: string, userId: string) {
+export async function setDefaultAddress(addressId: string) {
+  const session = await getSession();
+  if (!session) {
+    return { success: false as const, error: "Not authenticated" };
+  }
+
+  const userId = session.userId;
+
   const address = await db.address.findFirst({
     where: { id: addressId, userId },
   });
 
   if (!address) {
-    return { success: false, error: "Address not found" };
+    return { success: false as const, error: "Address not found" };
   }
 
   await db.$transaction([
@@ -143,5 +187,5 @@ export async function setDefaultAddress(addressId: string, userId: string) {
   revalidatePath("/account");
   revalidatePath("/checkout");
 
-  return { success: true };
+  return { success: true as const };
 }

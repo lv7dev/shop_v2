@@ -234,6 +234,11 @@ model Order {
   discountAmount Decimal     @default(0) @db.Decimal(10, 2)
   total          Decimal     @db.Decimal(10, 2)
   note           String?
+  paymentMethod  PaymentMethod  @default(COD)
+  paymentStatus  PaymentStatus  @default(PENDING)
+  paymentId      String?
+  currency       String         @default("USD")
+  paymentExpiry  DateTime?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -241,6 +246,7 @@ model Order {
 
   @@index([userId])
   @@index([status])
+  @@index([paymentStatus])
   @@map("orders")
 }
 
@@ -267,6 +273,20 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
   REFUNDED
+}
+
+enum PaymentMethod {
+  COD
+  STRIPE
+  MOMO
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  EXPIRED
 }
 
 // ──────────────────────────────────────
@@ -382,4 +402,16 @@ enum NotificationType {
   DISCOUNT
   ORDER_UPDATE
   SYSTEM
+}
+
+// ──────────────────────────────────────
+// Site Settings
+// ──────────────────────────────────────
+
+model SiteSettings {
+  id        String   @id @default("default")
+  data      Json     @default("{}")
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
 }
