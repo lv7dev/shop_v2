@@ -261,7 +261,7 @@ export function CheckoutForm({
         const data = await res.json();
         if (data.url) {
           clearCart();
-          window.location.href = data.url;
+          window.location.assign(data.url);
         } else {
           toast.error("Failed to initiate payment. Please try again.");
         }
@@ -274,7 +274,7 @@ export function CheckoutForm({
         const data = await res.json();
         if (data.payUrl) {
           clearCart();
-          window.location.href = data.payUrl;
+          window.location.assign(data.payUrl);
         } else {
           toast.error("Failed to initiate MoMo payment. Please try again.");
         }

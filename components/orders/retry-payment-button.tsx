@@ -29,7 +29,7 @@ export function RetryPaymentButton({
       const data = await res.json();
       const url = data.url || data.payUrl;
       if (url) {
-        window.location.href = url;
+        window.location.assign(url);
       }
     } catch {
       setLoading(false);
