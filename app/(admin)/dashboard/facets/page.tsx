@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { Pencil, Plus } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -9,17 +11,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { getFacets } from "@/services/facets";
+import { Button } from "@/components/ui/button";
+import { getAdminFacets } from "@/services/facets";
+import { DataTableSearch } from "@/components/admin/data-table-search";
+import { DataTablePagination } from "@/components/admin/data-table-pagination";
 
-const FacetForm = dynamic(
-  () => import("@/components/admin/facet-form").then((mod) => mod.FacetForm)
-);
-const FacetEditButton = dynamic(
-  () => import("@/components/admin/facet-form").then((mod) => mod.FacetEditButton)
-);
-const FacetValuesManager = dynamic(
-  () => import("@/components/admin/facet-values-manager").then((mod) => mod.FacetValuesManager)
-);
 const FacetDeleteButton = dynamic(
   () => import("@/components/admin/facet-actions").then((mod) => mod.FacetDeleteButton)
 );
@@ -28,8 +24,21 @@ export const metadata: Metadata = {
   title: "Manage Facets",
 };
 
-export default async function AdminFacetsPage() {
-  const facets = await getFacets();
+export default async function AdminFacetsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
+  const perPage = Math.max(1, Number(params.per_page) || 10);
+  const search = params.q || undefined;
+
+  const { data: facets, total } = await getAdminFacets({
+    page,
+    perPage,
+    search,
+  });
 
   return (
     <div>
@@ -40,7 +49,16 @@ export default async function AdminFacetsPage() {
             Manage product attributes like Size, Color, Brand
           </p>
         </div>
-        <FacetForm />
+        <Button asChild size="sm" className="gap-2">
+          <Link href="/dashboard/facets/new">
+            <Plus className="size-4" />
+            Add Facet
+          </Link>
+        </Button>
+      </div>
+
+      <div className="mb-4 flex items-center gap-3">
+        <DataTableSearch placeholder="Search facets..." />
       </div>
 
       <div className="rounded-lg border">
@@ -60,7 +78,7 @@ export default async function AdminFacetsPage() {
                   colSpan={4}
                   className="py-8 text-center text-muted-foreground"
                 >
-                  No facets yet. Create one to get started.
+                  No facets found.
                 </TableCell>
               </TableRow>
             ) : (
@@ -71,14 +89,31 @@ export default async function AdminFacetsPage() {
                     <Badge variant="outline">{facet.slug}</Badge>
                   </TableCell>
                   <TableCell>
-                    <FacetValuesManager
-                      facetId={facet.id}
-                      values={facet.values}
-                    />
+                    <div className="flex flex-wrap gap-1">
+                      {facet.values.slice(0, 5).map((val) => (
+                        <Badge key={val.id} variant="secondary" className="text-xs">
+                          {val.value}
+                          {val._count.products > 0 && (
+                            <span className="ml-1 text-[10px] text-muted-foreground">
+                              ({val._count.products})
+                            </span>
+                          )}
+                        </Badge>
+                      ))}
+                      {facet.values.length > 5 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{facet.values.length - 5} more
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <FacetEditButton facet={facet} />
+                      <Button variant="ghost" size="icon" className="size-8" asChild>
+                        <Link href={`/dashboard/facets/${facet.id}/edit`}>
+                          <Pencil className="size-3.5" />
+                        </Link>
+                      </Button>
                       <FacetDeleteButton facetId={facet.id} />
                     </div>
                   </TableCell>
@@ -87,6 +122,7 @@ export default async function AdminFacetsPage() {
             )}
           </TableBody>
         </Table>
+        <DataTablePagination total={total} page={page} perPage={perPage} />
       </div>
     </div>
   );

@@ -15,6 +15,9 @@ import {
 } from "@/components/ui/table";
 import { getAdminProducts } from "@/services/admin";
 import { formatPrice } from "@/lib/utils";
+import { DataTableSearch } from "@/components/admin/data-table-search";
+import { DataTableFilter } from "@/components/admin/data-table-filter";
+import { DataTablePagination } from "@/components/admin/data-table-pagination";
 
 const AdminProductActions = dynamic(
   () => import("@/components/admin/product-actions").then((mod) => mod.AdminProductActions)
@@ -24,8 +27,28 @@ export const metadata: Metadata = {
   title: "Manage Products",
 };
 
-export default async function AdminProductsPage() {
-  const products = await getAdminProducts();
+const STATUS_OPTIONS = [
+  { label: "Active", value: "active" },
+  { label: "Inactive", value: "inactive" },
+];
+
+export default async function AdminProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
+  const perPage = Math.max(1, Number(params.per_page) || 10);
+  const search = params.q || undefined;
+  const status = params.status || undefined;
+
+  const { data: products, total } = await getAdminProducts({
+    page,
+    perPage,
+    search,
+    status,
+  });
 
   return (
     <div>
@@ -33,7 +56,7 @@ export default async function AdminProductsPage() {
         <div>
           <h1 className="text-3xl font-bold">Products</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {products.length} {products.length === 1 ? "product" : "products"}
+            {total} {total === 1 ? "product" : "products"}
           </p>
         </div>
         <Button asChild>
@@ -42,6 +65,11 @@ export default async function AdminProductsPage() {
             Add Product
           </Link>
         </Button>
+      </div>
+
+      <div className="mb-4 flex items-center gap-3">
+        <DataTableSearch placeholder="Search by name or SKU..." />
+        <DataTableFilter paramKey="status" options={STATUS_OPTIONS} placeholder="Status" />
       </div>
 
       <div className="rounded-lg border">
@@ -133,6 +161,7 @@ export default async function AdminProductsPage() {
             )}
           </TableBody>
         </Table>
+        <DataTablePagination total={total} page={page} perPage={perPage} />
       </div>
     </div>
   );

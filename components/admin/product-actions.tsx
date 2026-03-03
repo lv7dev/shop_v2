@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { updateProduct, deleteProduct } from "@/actions/product";
 
 export function AdminProductActions({
@@ -24,6 +25,7 @@ export function AdminProductActions({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   async function handleToggleActive() {
     setLoading(true);
@@ -38,7 +40,6 @@ export function AdminProductActions({
   }
 
   async function handleDelete() {
-    if (!confirm("Are you sure you want to delete this product?")) return;
     setLoading(true);
     const result = await deleteProduct(productId);
     if (result.success) {
@@ -48,44 +49,57 @@ export function AdminProductActions({
       toast.error(result.error);
     }
     setLoading(false);
+    setConfirmOpen(false);
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-8" disabled={loading}>
-          <MoreHorizontal className="size-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem asChild>
-          <Link href={`/dashboard/products/${productId}/edit`}>
-            <Pencil className="mr-2 size-4" />
-            Edit
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleToggleActive}>
-          {isActive ? (
-            <>
-              <EyeOff className="mr-2 size-4" />
-              Deactivate
-            </>
-          ) : (
-            <>
-              <Eye className="mr-2 size-4" />
-              Activate
-            </>
-          )}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={handleDelete}
-          className="text-destructive focus:text-destructive"
-        >
-          <Trash2 className="mr-2 size-4" />
-          Delete
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="size-8" disabled={loading}>
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link href={`/dashboard/products/${productId}/edit`}>
+              <Pencil className="mr-2 size-4" />
+              Edit
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleToggleActive}>
+            {isActive ? (
+              <>
+                <EyeOff className="mr-2 size-4" />
+                Deactivate
+              </>
+            ) : (
+              <>
+                <Eye className="mr-2 size-4" />
+                Activate
+              </>
+            )}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => setConfirmOpen(true)}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="mr-2 size-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete product"
+        description="Are you sure you want to delete this product? This action cannot be undone."
+        onConfirm={handleDelete}
+        loading={loading}
+        confirmLabel="Delete"
+      />
+    </>
   );
 }

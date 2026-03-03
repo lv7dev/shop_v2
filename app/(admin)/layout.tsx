@@ -27,15 +27,15 @@ export default async function AdminLayout({
   await requireAdmin();
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="hidden w-64 border-r bg-muted/40 md:block">
+    <div className="flex h-screen overflow-hidden">
+      {/* Sidebar - fixed */}
+      <aside className="hidden w-64 flex-shrink-0 border-r bg-muted/40 md:flex md:flex-col">
         <div className="flex h-16 items-center border-b px-6">
           <Link href="/dashboard" className="text-lg font-bold">
             {APP_NAME} Admin
           </Link>
         </div>
-        <nav className="flex flex-col gap-1 p-4">
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-4">
           {ADMIN_NAV.map((link) => (
             <Link
               key={link.href}
@@ -49,15 +49,15 @@ export default async function AdminLayout({
         </nav>
       </aside>
 
-      {/* Main content */}
-      <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center border-b px-6">
+      {/* Main content - scrollable */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <header className="flex h-16 flex-shrink-0 items-center border-b px-6">
           <Link href="/" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="size-4" />
             Back to store
           </Link>
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   );

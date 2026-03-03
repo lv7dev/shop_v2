@@ -7,6 +7,7 @@ import { Plus, Trash2, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import {
   createFacetValuesBatch,
   updateFacetValue,
@@ -32,6 +33,7 @@ export function FacetValuesManager({ facetId, values }: FacetValuesManagerProps)
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; productCount: number } | null>(null);
 
   async function handleAdd() {
     const raw = newValue.trim();
@@ -76,16 +78,15 @@ export function FacetValuesManager({ facetId, values }: FacetValuesManagerProps)
     setLoading(false);
   }
 
-  async function handleDelete(id: string, productCount: number) {
+  function handleDeleteClick(id: string, productCount: number) {
     if (productCount > 0) {
-      if (
-        !confirm(
-          `This value is used by ${productCount} product(s). Removing it will unlink those products. Continue?`
-        )
-      ) {
-        return;
-      }
+      setDeleteTarget({ id, productCount });
+    } else {
+      doDelete(id);
     }
+  }
+
+  async function doDelete(id: string) {
     setLoading(true);
     const result = await deleteFacetValue(id);
     if (result.success) {
@@ -95,6 +96,7 @@ export function FacetValuesManager({ facetId, values }: FacetValuesManagerProps)
       toast.error(result.error);
     }
     setLoading(false);
+    setDeleteTarget(null);
   }
 
   function startEdit(value: FacetValue) {
@@ -104,6 +106,19 @@ export function FacetValuesManager({ facetId, values }: FacetValuesManagerProps)
 
   return (
     <div className="space-y-2">
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        title="Delete facet value"
+        description={
+          deleteTarget
+            ? `This value is used by ${deleteTarget.productCount} product(s). Removing it will unlink those products. Continue?`
+            : ""
+        }
+        onConfirm={() => deleteTarget && doDelete(deleteTarget.id)}
+        loading={loading}
+        confirmLabel="Delete"
+      />
       <div className="flex flex-wrap gap-2">
         {values.map((val) =>
           editingId === val.id ? (
@@ -154,7 +169,7 @@ export function FacetValuesManager({ facetId, values }: FacetValuesManagerProps)
                 variant="ghost"
                 size="icon"
                 className="size-5 opacity-0 group-hover:opacity-100"
-                onClick={() => handleDelete(val.id, val._count.products)}
+                onClick={() => handleDeleteClick(val.id, val._count.products)}
                 disabled={loading}
               >
                 <Trash2 className="size-3 text-destructive" />

@@ -1,4 +1,11 @@
 import { db } from "@/lib/db";
+import type { Prisma } from "@/lib/generated/prisma";
+
+type PaginationParams = {
+  page?: number;
+  perPage?: number;
+  search?: string;
+};
 
 export async function getAdminStats() {
   const [totalRevenue, orderCount, productCount, customerCount, recentOrders] =
@@ -29,14 +36,36 @@ export async function getAdminStats() {
   };
 }
 
-export async function getAdminProducts() {
-  return db.product.findMany({
-    include: {
-      category: { select: { name: true } },
-      _count: { select: { orderItems: true, reviews: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+export async function getAdminProducts(
+  params: PaginationParams & { status?: string } = {}
+) {
+  const { page = 1, perPage = 10, search, status } = params;
+  const where: Prisma.ProductWhereInput = {};
+
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { sku: { contains: search, mode: "insensitive" } },
+    ];
+  }
+  if (status === "active") where.isActive = true;
+  if (status === "inactive") where.isActive = false;
+
+  const [data, total] = await Promise.all([
+    db.product.findMany({
+      where,
+      include: {
+        category: { select: { name: true } },
+        _count: { select: { orderItems: true, reviews: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * perPage,
+      take: perPage,
+    }),
+    db.product.count({ where }),
+  ]);
+
+  return { data, total, page, perPage };
 }
 
 export async function getAdminProductById(id: string) {
@@ -67,34 +96,106 @@ export async function getAdminProductById(id: string) {
   });
 }
 
-export async function getAdminOrders() {
-  return db.order.findMany({
-    include: {
-      user: { select: { name: true, email: true } },
-      items: { include: { product: { select: { name: true } } } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-}
+export async function getAdminOrders(
+  params: PaginationParams & { status?: string } = {}
+) {
+  const { page = 1, perPage = 10, search, status } = params;
+  const where: Prisma.OrderWhereInput = {};
 
-export async function getAdminUsers() {
-  return db.user.findMany({
-    include: {
-      _count: { select: { orders: true, reviews: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-}
+  if (search) {
+    where.OR = [
+      { orderNumber: { contains: search, mode: "insensitive" } },
+      { user: { name: { contains: search, mode: "insensitive" } } },
+      { user: { email: { contains: search, mode: "insensitive" } } },
+    ];
+  }
+  if (status) {
+    where.status = status as Prisma.EnumOrderStatusFilter;
+  }
 
-export async function getAdminDiscounts() {
-  return db.discount.findMany({
-    include: {
-      products: {
-        include: { product: { select: { id: true, name: true } } },
+  const [data, total] = await Promise.all([
+    db.order.findMany({
+      where,
+      include: {
+        user: { select: { name: true, email: true } },
+        items: { include: { product: { select: { name: true } } } },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * perPage,
+      take: perPage,
+    }),
+    db.order.count({ where }),
+  ]);
+
+  return { data, total, page, perPage };
+}
+
+export async function getAdminUsers(
+  params: PaginationParams & { role?: string } = {}
+) {
+  const { page = 1, perPage = 10, search, role } = params;
+  const where: Prisma.UserWhereInput = {};
+
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+    ];
+  }
+  if (role) {
+    where.role = role as Prisma.EnumRoleFilter;
+  }
+
+  const [data, total] = await Promise.all([
+    db.user.findMany({
+      where,
+      include: {
+        _count: { select: { orders: true, reviews: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * perPage,
+      take: perPage,
+    }),
+    db.user.count({ where }),
+  ]);
+
+  return { data, total, page, perPage };
+}
+
+export async function getAdminDiscounts(
+  params: PaginationParams & { status?: string } = {}
+) {
+  const { page = 1, perPage = 10, search, status } = params;
+  const where: Prisma.DiscountWhereInput = {};
+
+  if (search) {
+    where.code = { contains: search, mode: "insensitive" };
+  }
+  if (status === "active") where.isActive = true;
+  if (status === "inactive") where.isActive = false;
+  if (status === "expired") {
+    where.expiresAt = { lt: new Date() };
+  }
+  if (status === "scheduled") {
+    where.startsAt = { gt: new Date() };
+  }
+
+  const [data, total] = await Promise.all([
+    db.discount.findMany({
+      where,
+      include: {
+        products: {
+          include: { product: { select: { id: true, name: true } } },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * perPage,
+      take: perPage,
+    }),
+    db.discount.count({ where }),
+  ]);
+
+  return { data, total, page, perPage };
 }
 
 export async function getAdminDiscountById(id: string) {
@@ -105,5 +206,13 @@ export async function getAdminDiscountById(id: string) {
         include: { product: { select: { id: true, name: true } } },
       },
     },
+  });
+}
+
+// Simple product list for forms (discount product selection etc.)
+export async function getProductOptions() {
+  return db.product.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
   });
 }

@@ -10,21 +10,49 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getAdminUsers } from "@/services/admin";
+import { DataTableSearch } from "@/components/admin/data-table-search";
+import { DataTableFilter } from "@/components/admin/data-table-filter";
+import { DataTablePagination } from "@/components/admin/data-table-pagination";
 
 export const metadata: Metadata = {
   title: "Manage Users",
 };
 
-export default async function AdminUsersPage() {
-  const users = await getAdminUsers();
+const ROLE_OPTIONS = [
+  { label: "Admin", value: "ADMIN" },
+  { label: "Customer", value: "CUSTOMER" },
+];
+
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
+  const perPage = Math.max(1, Number(params.per_page) || 10);
+  const search = params.q || undefined;
+  const role = params.role || undefined;
+
+  const { data: users, total } = await getAdminUsers({
+    page,
+    perPage,
+    search,
+    role,
+  });
 
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Users</h1>
         <span className="text-sm text-muted-foreground">
-          {users.length} {users.length === 1 ? "user" : "users"}
+          {total} {total === 1 ? "user" : "users"}
         </span>
+      </div>
+
+      <div className="mb-4 flex items-center gap-3">
+        <DataTableSearch placeholder="Search by name or email..." />
+        <DataTableFilter paramKey="role" options={ROLE_OPTIONS} placeholder="Role" />
       </div>
 
       <div className="rounded-lg border">
@@ -90,6 +118,7 @@ export default async function AdminUsersPage() {
             )}
           </TableBody>
         </Table>
+        <DataTablePagination total={total} page={page} perPage={perPage} />
       </div>
     </div>
   );

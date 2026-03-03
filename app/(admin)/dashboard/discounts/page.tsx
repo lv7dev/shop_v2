@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { Pencil, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -10,19 +13,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getAdminDiscounts } from "@/services/admin";
-import { getAdminProducts } from "@/services/admin";
 import { formatPrice } from "@/lib/utils";
+import { DataTableSearch } from "@/components/admin/data-table-search";
+import { DataTableFilter } from "@/components/admin/data-table-filter";
+import { DataTablePagination } from "@/components/admin/data-table-pagination";
 
-const DiscountForm = dynamic(
-  () =>
-    import("@/components/admin/discount-form").then((mod) => mod.DiscountForm)
-);
-const DiscountEditButton = dynamic(
-  () =>
-    import("@/components/admin/discount-form").then(
-      (mod) => mod.DiscountEditButton
-    )
-);
 const DiscountDeleteButton = dynamic(
   () =>
     import("@/components/admin/discount-actions").then(
@@ -40,13 +35,30 @@ export const metadata: Metadata = {
   title: "Manage Discounts",
 };
 
-export default async function AdminDiscountsPage() {
-  const [discounts, products] = await Promise.all([
-    getAdminDiscounts(),
-    getAdminProducts(),
-  ]);
+const STATUS_OPTIONS = [
+  { label: "Active", value: "active" },
+  { label: "Inactive", value: "inactive" },
+  { label: "Expired", value: "expired" },
+  { label: "Scheduled", value: "scheduled" },
+];
 
-  const productOptions = products.map((p) => ({ id: p.id, name: p.name }));
+export default async function AdminDiscountsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
+  const perPage = Math.max(1, Number(params.per_page) || 10);
+  const search = params.q || undefined;
+  const status = params.status || undefined;
+
+  const { data: discounts, total } = await getAdminDiscounts({
+    page,
+    perPage,
+    search,
+    status,
+  });
 
   return (
     <div>
@@ -57,7 +69,17 @@ export default async function AdminDiscountsPage() {
             Create and manage discount codes
           </p>
         </div>
-        <DiscountForm products={productOptions} />
+        <Button asChild size="sm" className="gap-2">
+          <Link href="/dashboard/discounts/new">
+            <Plus className="size-4" />
+            Add Discount
+          </Link>
+        </Button>
+      </div>
+
+      <div className="mb-4 flex items-center gap-3">
+        <DataTableSearch placeholder="Search by code..." />
+        <DataTableFilter paramKey="status" options={STATUS_OPTIONS} placeholder="Status" />
       </div>
 
       <div className="rounded-lg border">
@@ -81,7 +103,7 @@ export default async function AdminDiscountsPage() {
                   colSpan={8}
                   className="py-8 text-center text-muted-foreground"
                 >
-                  No discounts yet. Create one to get started.
+                  No discounts found.
                 </TableCell>
               </TableRow>
             ) : (
@@ -147,27 +169,11 @@ export default async function AdminDiscountsPage() {
                           discountId={d.id}
                           isActive={d.isActive}
                         />
-                        <DiscountEditButton
-                          discount={{
-                            id: d.id,
-                            code: d.code,
-                            description: d.description,
-                            type: d.type,
-                            scope: d.scope,
-                            method: d.method,
-                            stackable: d.stackable,
-                            value: Number(d.value),
-                            minOrder: d.minOrder ? Number(d.minOrder) : null,
-                            maxUses: d.maxUses,
-                            isActive: d.isActive,
-                            startsAt: d.startsAt.toISOString(),
-                            expiresAt: d.expiresAt
-                              ? d.expiresAt.toISOString()
-                              : null,
-                            productIds: d.products.map((p) => p.productId),
-                          }}
-                          products={productOptions}
-                        />
+                        <Button variant="ghost" size="icon" className="size-8" asChild>
+                          <Link href={`/dashboard/discounts/${d.id}/edit`}>
+                            <Pencil className="size-3.5" />
+                          </Link>
+                        </Button>
                         <DiscountDeleteButton discountId={d.id} />
                       </div>
                     </TableCell>
@@ -177,6 +183,7 @@ export default async function AdminDiscountsPage() {
             )}
           </TableBody>
         </Table>
+        <DataTablePagination total={total} page={page} perPage={perPage} />
       </div>
     </div>
   );

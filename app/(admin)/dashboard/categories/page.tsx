@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Fragment } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { Pencil, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -10,14 +13,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getCategories } from "@/services/categories";
+import { getAdminCategories } from "@/services/categories";
+import { DataTableSearch } from "@/components/admin/data-table-search";
+import { DataTablePagination } from "@/components/admin/data-table-pagination";
 
-const CategoryForm = dynamic(
-  () => import("@/components/admin/category-form").then((mod) => mod.CategoryForm)
-);
-const CategoryEditButton = dynamic(
-  () => import("@/components/admin/category-form").then((mod) => mod.CategoryEditButton)
-);
 const CategoryDeleteButton = dynamic(
   () => import("@/components/admin/category-actions").then((mod) => mod.CategoryDeleteButton)
 );
@@ -26,11 +25,21 @@ export const metadata: Metadata = {
   title: "Manage Categories",
 };
 
-export default async function AdminCategoriesPage() {
-  const categories = await getCategories();
+export default async function AdminCategoriesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
+  const perPage = Math.max(1, Number(params.per_page) || 10);
+  const search = params.q || undefined;
 
-  // Flatten for parent options (only top-level can be parents)
-  const parentOptions = categories.map((c) => ({ id: c.id, name: c.name }));
+  const { data: categories, total } = await getAdminCategories({
+    page,
+    perPage,
+    search,
+  });
 
   return (
     <div>
@@ -41,7 +50,16 @@ export default async function AdminCategoriesPage() {
             Organize your products into categories
           </p>
         </div>
-        <CategoryForm parentCategories={parentOptions} />
+        <Button asChild size="sm" className="gap-2">
+          <Link href="/dashboard/categories/new">
+            <Plus className="size-4" />
+            Add Category
+          </Link>
+        </Button>
+      </div>
+
+      <div className="mb-4 flex items-center gap-3">
+        <DataTableSearch placeholder="Search categories..." />
       </div>
 
       <div className="rounded-lg border">
@@ -61,7 +79,7 @@ export default async function AdminCategoriesPage() {
                   colSpan={4}
                   className="py-8 text-center text-muted-foreground"
                 >
-                  No categories yet. Create one to get started.
+                  No categories found.
                 </TableCell>
               </TableRow>
             ) : (
@@ -77,10 +95,11 @@ export default async function AdminCategoriesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <CategoryEditButton
-                          category={cat}
-                          parentCategories={parentOptions}
-                        />
+                        <Button variant="ghost" size="icon" className="size-8" asChild>
+                          <Link href={`/dashboard/categories/${cat.id}/edit`}>
+                            <Pencil className="size-3.5" />
+                          </Link>
+                        </Button>
                         <CategoryDeleteButton categoryId={cat.id} />
                       </div>
                     </TableCell>
@@ -98,10 +117,11 @@ export default async function AdminCategoriesPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <CategoryEditButton
-                            category={child}
-                            parentCategories={parentOptions}
-                          />
+                          <Button variant="ghost" size="icon" className="size-8" asChild>
+                            <Link href={`/dashboard/categories/${child.id}/edit`}>
+                              <Pencil className="size-3.5" />
+                            </Link>
+                          </Button>
                           <CategoryDeleteButton categoryId={child.id} />
                         </div>
                       </TableCell>
@@ -112,6 +132,7 @@ export default async function AdminCategoriesPage() {
             )}
           </TableBody>
         </Table>
+        <DataTablePagination total={total} page={page} perPage={perPage} />
       </div>
     </div>
   );

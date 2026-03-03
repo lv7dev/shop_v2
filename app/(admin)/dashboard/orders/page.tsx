@@ -11,6 +11,9 @@ import {
 } from "@/components/ui/table";
 import { getAdminOrders } from "@/services/admin";
 import { formatPrice } from "@/lib/utils";
+import { DataTableSearch } from "@/components/admin/data-table-search";
+import { DataTableFilter } from "@/components/admin/data-table-filter";
+import { DataTablePagination } from "@/components/admin/data-table-pagination";
 
 const OrderStatusSelect = dynamic(
   () => import("@/components/admin/order-status-select").then((mod) => mod.OrderStatusSelect)
@@ -20,16 +23,46 @@ export const metadata: Metadata = {
   title: "Manage Orders",
 };
 
-export default async function AdminOrdersPage() {
-  const orders = await getAdminOrders();
+const STATUS_OPTIONS = [
+  { label: "Pending", value: "PENDING" },
+  { label: "Confirmed", value: "CONFIRMED" },
+  { label: "Processing", value: "PROCESSING" },
+  { label: "Shipped", value: "SHIPPED" },
+  { label: "Delivered", value: "DELIVERED" },
+  { label: "Cancelled", value: "CANCELLED" },
+  { label: "Refunded", value: "REFUNDED" },
+];
+
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
+  const perPage = Math.max(1, Number(params.per_page) || 10);
+  const search = params.q || undefined;
+  const status = params.status || undefined;
+
+  const { data: orders, total } = await getAdminOrders({
+    page,
+    perPage,
+    search,
+    status,
+  });
 
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Orders</h1>
         <span className="text-sm text-muted-foreground">
-          {orders.length} {orders.length === 1 ? "order" : "orders"}
+          {total} {total === 1 ? "order" : "orders"}
         </span>
+      </div>
+
+      <div className="mb-4 flex items-center gap-3">
+        <DataTableSearch placeholder="Search by order # or customer..." />
+        <DataTableFilter paramKey="status" options={STATUS_OPTIONS} placeholder="Status" />
       </div>
 
       <div className="rounded-lg border">
@@ -100,6 +133,7 @@ export default async function AdminOrdersPage() {
             )}
           </TableBody>
         </Table>
+        <DataTablePagination total={total} page={page} perPage={perPage} />
       </div>
     </div>
   );
