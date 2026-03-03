@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
-import { getPaymentSettings } from "@/actions/settings";
+import { getPaymentSettings, getDeliverySettings } from "@/actions/settings";
 import { PaymentSettingsForm } from "@/components/admin/payment-settings-form";
+import { DeliverySettingsForm } from "@/components/admin/delivery-settings-form";
 
 export const metadata: Metadata = {
   title: "Settings - Admin",
 };
 
 export default async function SettingsPage() {
-  const paymentSettings = await getPaymentSettings();
+  const [paymentSettings, deliverySettings] = await Promise.all([
+    getPaymentSettings(),
+    getDeliverySettings(),
+  ]);
 
   const envStatus = {
     stripe: !!process.env.STRIPE_SECRET_KEY,
@@ -25,6 +29,10 @@ export default async function SettingsPage() {
         initialSettings={paymentSettings}
         envStatus={envStatus}
       />
+
+      <div className="mt-10">
+        <DeliverySettingsForm initialSettings={deliverySettings} />
+      </div>
     </div>
   );
 }

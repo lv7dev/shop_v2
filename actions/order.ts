@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { getSession, requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import * as Sentry from "@sentry/nextjs";
+import { sendToUser } from "@/lib/sse";
 import type { OrderStatus, PaymentMethod } from "@/lib/generated/prisma/client";
 import {
   createOrderSchema,
@@ -285,6 +286,34 @@ export async function updateOrderStatus(orderId: string, status: string) {
       where: { id: orderId },
       data: { status: parsed.data as OrderStatus },
     });
+
+    // Notify user when order is shipped
+    if (parsed.data === "SHIPPED") {
+      try {
+        const notification = await db.notification.create({
+          data: {
+            type: "ORDER_UPDATE",
+            title: "Your order has been shipped!",
+            message: `Order #${order.orderNumber.slice(-8).toUpperCase()} is on its way. Track your delivery now.`,
+            data: { orderId: order.id, orderNumber: order.orderNumber },
+          },
+        });
+        sendToUser(order.userId, {
+          type: "NEW_NOTIFICATION",
+          payload: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            data: notification.data,
+            createdAt: notification.createdAt.toISOString(),
+          },
+        });
+      } catch (notifError) {
+        // Don't fail the status update if notification fails
+        console.error("Failed to create shipped notification:", notifError);
+      }
+    }
 
     revalidatePath("/orders");
     revalidatePath(`/orders/${orderId}`);

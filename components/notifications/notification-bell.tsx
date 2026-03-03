@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Bell, CheckCheck, Tag, Zap, ShoppingBag, Package, Clock, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -120,11 +121,23 @@ function NotificationContent({ notification }: { notification: NotificationItem 
 }
 
 export function NotificationBell() {
+  const router = useRouter();
   const notifications = useNotificationStore((s) => s.notifications);
   const hydrated = useNotificationStore((s) => s._hydrated);
   const unreadCount = useNotificationStore((s) => s.unreadCount());
   const markRead = useNotificationStore((s) => s.markRead);
   const markAllRead = useNotificationStore((s) => s.markAllRead);
+
+  async function handleNotificationClick(n: NotificationItem) {
+    if (!n.isRead) {
+      markRead(n.id);
+      await markNotificationRead(n.id);
+    }
+    // Navigate to order detail for ORDER_UPDATE notifications
+    if (n.type === "ORDER_UPDATE" && n.data?.orderId) {
+      router.push(`/orders/${n.data.orderId}`);
+    }
+  }
 
   async function handleMarkRead(id: string) {
     markRead(id);
@@ -175,7 +188,7 @@ export function NotificationBell() {
             notifications.map((n) => (
               <button
                 key={n.id}
-                onClick={() => !n.isRead && handleMarkRead(n.id)}
+                onClick={() => handleNotificationClick(n)}
                 className={`flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-accent ${
                   !n.isRead ? "bg-accent/50" : ""
                 }`}

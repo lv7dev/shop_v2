@@ -48,6 +48,8 @@ model Address {
   zipCode    String
   country    String
   isDefault  Boolean @default(false)
+  latitude   Float?
+  longitude  Float?
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders Order[]

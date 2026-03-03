@@ -9,6 +9,8 @@ import {
   ShoppingCart,
   AlertCircle,
   XCircle,
+  Truck,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -172,6 +174,46 @@ export default async function OrderDetailPage({
           )}
         </div>
       </div>
+
+      {/* Track Delivery banner */}
+      {order.status === "SHIPPED" && (
+        <div className="mb-6 flex items-center gap-3 rounded-lg border border-purple-200 bg-purple-50 p-4">
+          <Truck className="size-6 shrink-0 text-purple-600" />
+          <div className="flex-1">
+            <p className="font-medium text-purple-800">
+              Your order is on its way!
+            </p>
+            <p className="text-sm text-purple-700">
+              Track the delivery in real time on the map.
+            </p>
+          </div>
+          <Button asChild>
+            <Link href={`/orders/${order.id}/tracking`}>
+              <MapPin className="mr-2 size-4" />
+              Track Delivery
+            </Link>
+          </Button>
+        </div>
+      )}
+      {order.status === "DELIVERED" && (
+        <div className="mb-6 flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4">
+          <Truck className="size-6 shrink-0 text-green-600" />
+          <div className="flex-1">
+            <p className="font-medium text-green-800">
+              Your order has been delivered!
+            </p>
+            <p className="text-sm text-green-700">
+              View the completed delivery route on the map.
+            </p>
+          </div>
+          <Button variant="outline" asChild>
+            <Link href={`/orders/${order.id}/tracking`}>
+              <MapPin className="mr-2 size-4" />
+              View Route
+            </Link>
+          </Button>
+        </div>
+      )}
 
       {/* Payment info */}
       {order.paymentMethod !== "COD" && (

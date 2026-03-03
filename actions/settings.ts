@@ -4,11 +4,19 @@ import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import * as Sentry from "@sentry/nextjs";
+import { deliverySettingsSchema } from "@/lib/validations/delivery";
 
 export type PaymentSettings = {
   cod: { enabled: boolean };
   stripe: { enabled: boolean };
   momo: { enabled: boolean };
+};
+
+export type DeliverySettings = {
+  hqLatitude: number;
+  hqLongitude: number;
+  hqAddress: string;
+  simulationDurationMinutes: number;
 };
 
 const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
@@ -17,8 +25,16 @@ const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
   momo: { enabled: false },
 };
 
+const DEFAULT_DELIVERY_SETTINGS: DeliverySettings = {
+  hqLatitude: 10.762622,
+  hqLongitude: 106.660172,
+  hqAddress: "Headquarters",
+  simulationDurationMinutes: 2,
+};
+
 type SiteSettingsData = {
   payment?: PaymentSettings;
+  delivery?: DeliverySettings;
 };
 
 async function getSiteSettings(): Promise<SiteSettingsData> {
@@ -86,5 +102,31 @@ export async function updatePaymentSettings(payment: PaymentSettings) {
     Sentry.captureException(error);
     console.error("Update payment settings error:", error);
     return { success: false, error: "Failed to update settings" };
+  }
+}
+
+// ── Delivery Settings ──────────────────────────
+
+export async function getDeliverySettings(): Promise<DeliverySettings> {
+  const settings = await getSiteSettings();
+  return settings.delivery ?? DEFAULT_DELIVERY_SETTINGS;
+}
+
+export async function updateDeliverySettings(delivery: DeliverySettings) {
+  await requireAdmin();
+
+  const parsed = deliverySettingsSchema.safeParse(delivery);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  try {
+    await updateSiteSettings({ delivery: parsed.data });
+    revalidatePath("/dashboard/settings");
+    return { success: true };
+  } catch (error) {
+    Sentry.captureException(error);
+    console.error("Update delivery settings error:", error);
+    return { success: false, error: "Failed to update delivery settings" };
   }
 }
