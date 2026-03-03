@@ -27,7 +27,9 @@ export default async function AdminLayout({
   await requireAdmin();
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <>
+    <style>{`html, body { height: 100%; overflow: hidden; }`}</style>
+    <div className="flex h-dvh overflow-hidden">
       {/* Sidebar - fixed */}
       <aside className="hidden w-64 flex-shrink-0 border-r bg-muted/40 md:flex md:flex-col">
         <div className="flex h-16 items-center border-b px-6">
@@ -60,5 +62,6 @@ export default async function AdminLayout({
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
+    </>
   );
 }
