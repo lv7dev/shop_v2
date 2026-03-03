@@ -8,6 +8,12 @@ export async function getNotifications() {
   if (!session) return { success: false, notifications: [] };
 
   const notifications = await db.notification.findMany({
+    where: {
+      OR: [
+        { userId: session.userId }, // Notifications targeted to this user
+        { userId: null },           // Global notifications (DISCOUNT, SYSTEM)
+      ],
+    },
     orderBy: { createdAt: "desc" },
     take: 20,
     include: {

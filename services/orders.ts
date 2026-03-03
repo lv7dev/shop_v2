@@ -10,9 +10,9 @@ export async function getOrdersByUserId(userId: string) {
   });
 }
 
-export async function getOrderById(id: string) {
+export async function getOrderById(id: string, userId: string) {
   return db.order.findFirst({
-    where: { id },
+    where: { id, userId },
     include: {
       items: { include: { product: true } },
       address: true,

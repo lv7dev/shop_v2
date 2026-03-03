@@ -296,6 +296,7 @@ export async function updateOrderStatus(orderId: string, status: string) {
             title: "Your order has been shipped!",
             message: `Order #${order.orderNumber.slice(-8).toUpperCase()} is on its way. Track your delivery now.`,
             data: { orderId: order.id, orderNumber: order.orderNumber },
+            userId: order.userId,
           },
         });
         sendToUser(order.userId, {

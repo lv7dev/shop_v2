@@ -210,6 +210,7 @@ export async function markOrderDelivered(orderId: string) {
           title: "Your order has been delivered!",
           message: `Order #${order.orderNumber.slice(-8).toUpperCase()} has arrived at the destination.`,
           data: { orderId: order.id, orderNumber: order.orderNumber },
+          userId: order.userId,
         },
       });
       sendToUser(order.userId, {

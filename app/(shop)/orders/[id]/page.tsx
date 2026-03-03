@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   CheckCircle,
   ArrowLeft,
@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { getSession } from "@/lib/auth";
 import { getOrderById } from "@/services/orders";
 import { formatPrice } from "@/lib/utils";
 import {
@@ -56,9 +57,12 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ new?: string; payment?: string }>;
 }) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
   const { id } = await params;
   const { new: isNew, payment } = await searchParams;
-  const order = await getOrderById(id);
+  const order = await getOrderById(id, session.userId);
 
   if (!order) {
     notFound();
