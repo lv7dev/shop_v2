@@ -7,7 +7,6 @@ import {
   CreditCard,
   Smartphone,
   Check,
-  X,
   Loader2,
   AlertTriangle,
 } from "lucide-react";

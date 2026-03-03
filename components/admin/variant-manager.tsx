@@ -39,7 +39,6 @@ type VariantManagerProps = {
 };
 
 export function VariantManager({
-  facetOptions,
   facetGroups,
   variants,
   onChange,

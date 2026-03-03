@@ -96,6 +96,7 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
     },
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form's watch() is not yet compatible with React Compiler
   const isActive = watch("isActive");
   const categoryId = watch("categoryId");
   const price = watch("price");

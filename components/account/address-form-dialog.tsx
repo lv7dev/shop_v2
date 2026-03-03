@@ -69,6 +69,7 @@ export function AddressFormDialog({
     },
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form's watch() is not yet compatible with React Compiler
   const isDefault = watch("isDefault");
 
   async function onSubmit(values: AddressInput) {
