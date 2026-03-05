@@ -7,6 +7,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginWithCart } from "@/actions/auth";
 import { useCartStore } from "@/store/cart-store";
+import { useWishlistStore } from "@/store/wishlist-store";
+import { mergeWishlistInDB } from "@/actions/wishlist";
 import type { CartDbItemInput } from "@/types/cart";
 
 const CartMergeModal = dynamic(
@@ -22,6 +24,7 @@ export function LoginForm() {
 
   const items = useCartStore((s) => s.items);
   const replaceCart = useCartStore((s) => s.replaceCart);
+  const wishlistItems = useWishlistStore((s) => s.items);
 
   const [error, setError] = useState(oauthError);
   const [loading, setLoading] = useState(false);
@@ -72,6 +75,12 @@ export function LoginForm() {
     if ("items" in result && result.items.length > 0) {
       replaceCart(result.items);
     }
+
+    // Merge local wishlist silently (no conflicts possible)
+    if (wishlistItems.length > 0) {
+      mergeWishlistInDB(wishlistItems.map((i) => i.productId)).catch(() => {});
+    }
+
     router.push(result.redirectUrl);
   }
 

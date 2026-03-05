@@ -27,6 +27,7 @@ model User {
   reviews       Review[]
   addresses     Address[]
   cartItems     CartItem[]
+  wishlistItems WishlistItem[]
   notifications Notification[]
 
   @@map("users")
@@ -117,12 +118,13 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  orderItems  OrderItem[]
-  reviews     Review[]
-  cartItems   CartItem[]
-  facetValues ProductFacetValue[]
-  variants    ProductVariant[]
-  discounts   DiscountProduct[]
+  orderItems    OrderItem[]
+  reviews       Review[]
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+  facetValues   ProductFacetValue[]
+  variants      ProductVariant[]
+  discounts     DiscountProduct[]
 
   @@index([categoryId])
   @@index([isActive])
@@ -312,6 +314,24 @@ model CartItem {
   @@unique([userId, productId, variantId])
   @@index([userId])
   @@map("cart_items")
+}
+
+// ──────────────────────────────────────
+// Wishlist
+// ──────────────────────────────────────
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@map("wishlist_items")
 }
 
 // ──────────────────────────────────────

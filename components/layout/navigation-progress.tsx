@@ -74,7 +74,8 @@ export function NavigationProgress() {
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      const anchor = (e.target as HTMLElement).closest("a");
+      const target = e.target as HTMLElement;
+      const anchor = target.closest("a");
       if (
         !anchor ||
         anchor.target === "_blank" ||
@@ -84,6 +85,11 @@ export function NavigationProgress() {
         e.shiftKey
       )
         return;
+
+      // Skip if click originated from an interactive element inside the link
+      // (e.g. a wishlist button or add-to-cart button that prevents navigation)
+      const interactive = target.closest("button, [role='button'], input, select, textarea");
+      if (interactive && anchor.contains(interactive)) return;
 
       const href = anchor.getAttribute("href");
       if (!href || href.startsWith("#") || href.startsWith("http")) return;

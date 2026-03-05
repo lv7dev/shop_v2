@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   ShoppingCart,
+  Heart,
   Menu,
   User,
   LogOut,
@@ -20,7 +21,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCartStore } from "@/store/cart-store";
+import { useWishlistStore } from "@/store/wishlist-store";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { SearchBar } from "@/components/layout/search-bar";
 import { APP_NAME } from "@/lib/constants";
 import { logout } from "@/actions/auth";
 
@@ -48,10 +51,14 @@ export function Navbar({ user }: NavbarProps) {
   const hydrated = useCartStore((s) => s._hydrated);
   const totalItems = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
   const clearCart = useCartStore((s) => s.clearCart);
+  const wishlistHydrated = useWishlistStore((s) => s._hydrated);
+  const wishlistCount = useWishlistStore((s) => s.items.length);
+  const clearWishlist = useWishlistStore((s) => s.clearWishlist);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   function handleLogout() {
     clearCart(false);
+    clearWishlist(false);
     logout();
   }
 
@@ -78,7 +85,20 @@ export function Navbar({ user }: NavbarProps) {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          <SearchBar />
           {user && <NotificationBell />}
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/wishlist" className="relative">
+              <Heart className="size-5" />
+              <span
+                className={`absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white transition-transform ${
+                  wishlistHydrated && wishlistCount > 0 ? "scale-100" : "scale-0"
+                }`}
+              >
+                {wishlistCount}
+              </span>
+            </Link>
+          </Button>
           <Button variant="ghost" size="icon" asChild>
             <Link href="/cart" className="relative">
               <ShoppingCart className="size-5" />
@@ -150,6 +170,8 @@ export function Navbar({ user }: NavbarProps) {
                 user={user}
                 totalItems={totalItems}
                 hydrated={hydrated}
+                wishlistCount={wishlistCount}
+                wishlistHydrated={wishlistHydrated}
                 onClose={() => setMobileMenuOpen(false)}
                 onLogout={handleLogout}
               />

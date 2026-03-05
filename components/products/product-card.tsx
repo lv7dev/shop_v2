@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProductImage } from "@/components/ui/product-image";
 import { formatPrice } from "@/lib/utils";
 import { AddToCartButton } from "./add-to-cart-button";
+import { WishlistButton } from "@/components/wishlist/wishlist-button";
 
 type ProductCardProps = {
   id: string;
@@ -72,6 +73,11 @@ export function ProductCard({
               </Badge>
             </div>
           )}
+          <div className="absolute right-2 top-2 z-10">
+            <WishlistButton
+              product={{ id, name, slug, price, image: images[0] ?? "", stock }}
+            />
+          </div>
         </div>
       </Link>
 

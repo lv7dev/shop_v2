@@ -1,8 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ShoppingCart,
+  Heart,
+  Search,
   Home,
   Package,
   Grid3X3,
@@ -38,6 +42,8 @@ type MobileMenuProps = {
   } | null;
   totalItems: number;
   hydrated: boolean;
+  wishlistCount: number;
+  wishlistHydrated: boolean;
   onClose: () => void;
   onLogout: () => void;
 };
@@ -46,11 +52,23 @@ export function MobileMenu({
   user,
   totalItems,
   hydrated,
+  wishlistCount,
+  wishlistHydrated,
   onClose,
   onLogout,
 }: MobileMenuProps) {
+  const router = useRouter();
   const unreadCount = useNotificationStore((s) => s.unreadCount());
   const notifHydrated = useNotificationStore((s) => s._hydrated);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+      onClose();
+    }
+  }
 
   return (
     <SheetContent side="right" className="w-80 p-0">
@@ -59,6 +77,20 @@ export function MobileMenu({
       </SheetHeader>
 
       <div className="flex flex-1 flex-col overflow-y-auto">
+        {/* Search */}
+        <form onSubmit={handleSearch} className="px-4 pt-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search products..."
+              className="w-full rounded-lg border bg-muted/50 py-2.5 pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:bg-background focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+        </form>
+
         {/* User info card */}
         {user && (
           <div className="mx-4 mt-4 flex items-center gap-3 rounded-lg bg-muted/50 p-3">
@@ -98,6 +130,19 @@ export function MobileMenu({
             {hydrated && totalItems > 0 && (
               <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                 {totalItems}
+              </span>
+            )}
+          </Link>
+          <Link
+            href="/wishlist"
+            onClick={onClose}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+          >
+            <Heart className="size-4 text-muted-foreground" />
+            Wishlist
+            {wishlistHydrated && wishlistCount > 0 && (
+              <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                {wishlistCount}
               </span>
             )}
           </Link>

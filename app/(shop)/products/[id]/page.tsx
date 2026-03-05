@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { formatPrice } from "@/lib/utils";
 import { TrackRecentlyViewed } from "@/components/products/track-recently-viewed";
+import { WishlistButton } from "@/components/wishlist/wishlist-button";
 import { getBaseUrl } from "@/lib/seo";
 
 type Props = {
@@ -338,6 +339,17 @@ export default async function ProductDetailPage({ params }: Props) {
                 }}
                 variants={variantsData}
               />
+              <WishlistButton
+                product={{
+                  id: product.id,
+                  name: product.name,
+                  slug: product.slug,
+                  price,
+                  image: product.images[0] ?? "",
+                  stock: totalVariantStock,
+                }}
+                variant="button"
+              />
             </>
           ) : (
             <>
@@ -373,7 +385,7 @@ export default async function ProductDetailPage({ params }: Props) {
               <Separator />
 
               {/* Add to cart */}
-              <div className="max-w-xs">
+              <div className="max-w-xs space-y-3">
                 <AddToCartButton
                   product={{
                     id: product.id,
@@ -382,6 +394,18 @@ export default async function ProductDetailPage({ params }: Props) {
                     image: product.images[0] ?? "",
                     stock: product.stock,
                   }}
+                />
+                <WishlistButton
+                  product={{
+                    id: product.id,
+                    name: product.name,
+                    slug: product.slug,
+                    price,
+                    image: product.images[0] ?? "",
+                    stock: product.stock,
+                  }}
+                  variant="button"
+                  className="w-full"
                 />
               </div>
             </>
