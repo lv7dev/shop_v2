@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Bell, CheckCheck, Tag, Zap, ShoppingBag, Package, Clock, DollarSign } from "lucide-react";
+import { Bell, CheckCheck, Tag, Zap, ShoppingBag, Package, Clock, DollarSign, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -83,40 +83,55 @@ function DiscountDetails({ data }: { data: Record<string, unknown> }) {
   );
 }
 
+function NotificationIcon({ type }: { type: string }) {
+  if (type === "LOW_STOCK") {
+    return <AlertTriangle className="mt-0.5 size-4 shrink-0 text-orange-500" />;
+  }
+  return null;
+}
+
 function NotificationContent({ notification }: { notification: NotificationItem }) {
   const isDiscount = notification.type === "DISCOUNT" && notification.data;
+  const isLowStock = notification.type === "LOW_STOCK" && notification.data;
 
   return (
-    <div className="min-w-0 flex-1">
-      <p className="text-sm font-medium">{notification.title}</p>
-      {isDiscount ? (
-        <>
+    <>
+      <NotificationIcon type={notification.type} />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">{notification.title}</p>
+        {isDiscount ? (
+          <>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {Boolean(notification.data!.code) && notification.data!.method !== "AUTO" ? (
+                <>
+                  Code:{" "}
+                  <span className="font-mono font-semibold text-foreground">
+                    {String(notification.data!.code)}
+                  </span>
+                  {" · "}
+                </>
+              ) : null}
+              {notification.data!.type === "PERCENTAGE"
+                ? `${notification.data!.value}% off`
+                : `$${notification.data!.value} off`}
+              {notification.data!.method === "AUTO" ? " · Auto-applied at checkout" : null}
+            </p>
+            <DiscountDetails data={notification.data!} />
+          </>
+        ) : isLowStock ? (
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {Boolean(notification.data!.code) && notification.data!.method !== "AUTO" ? (
-              <>
-                Code:{" "}
-                <span className="font-mono font-semibold text-foreground">
-                  {String(notification.data!.code)}
-                </span>
-                {" · "}
-              </>
-            ) : null}
-            {notification.data!.type === "PERCENTAGE"
-              ? `${notification.data!.value}% off`
-              : `$${notification.data!.value} off`}
-            {notification.data!.method === "AUTO" ? " · Auto-applied at checkout" : null}
+            {notification.message}
           </p>
-          <DiscountDetails data={notification.data!} />
-        </>
-      ) : (
-        <p className="text-xs text-muted-foreground line-clamp-2">
-          {notification.message}
+        ) : (
+          <p className="text-xs text-muted-foreground line-clamp-2">
+            {notification.message}
+          </p>
+        )}
+        <p className="mt-1 text-[10px] text-muted-foreground">
+          {relativeTime(new Date(notification.createdAt))}
         </p>
-      )}
-      <p className="mt-1 text-[10px] text-muted-foreground">
-        {relativeTime(new Date(notification.createdAt))}
-      </p>
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -133,9 +148,10 @@ export function NotificationBell() {
       markRead(n.id);
       await markNotificationRead(n.id);
     }
-    // Navigate to order detail for ORDER_UPDATE notifications
     if (n.type === "ORDER_UPDATE" && n.data?.orderId) {
       router.push(`/orders/${n.data.orderId}`);
+    } else if (n.type === "LOW_STOCK" && n.data?.productId) {
+      router.push(`/dashboard/products/${n.data.productId}/edit`);
     }
   }
 

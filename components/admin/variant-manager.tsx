@@ -1,18 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Copy } from "lucide-react";
+import { Plus, Trash2, Copy, ChevronDown, Package, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 
 type FacetValueOption = {
   id: string;
@@ -44,7 +38,7 @@ export function VariantManager({
   onChange,
   basePrice,
 }: VariantManagerProps) {
-  const [openItems, setOpenItems] = useState<string[]>([]);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   function addVariant() {
     const newVariant: VariantData = {
@@ -55,8 +49,7 @@ export function VariantManager({
     };
     const updated = [...variants, newVariant];
     onChange(updated);
-    // Open the newly added variant
-    setOpenItems([...openItems, `variant-${updated.length - 1}`]);
+    setExpandedIndex(updated.length - 1);
   }
 
   function duplicateVariant(index: number) {
@@ -70,11 +63,15 @@ export function VariantManager({
     const updated = [...variants];
     updated.splice(index + 1, 0, newVariant);
     onChange(updated);
-    setOpenItems([...openItems, `variant-${index + 1}`]);
+    setExpandedIndex(index + 1);
   }
 
   function removeVariant(index: number) {
     onChange(variants.filter((_, i) => i !== index));
+    if (expandedIndex === index) setExpandedIndex(null);
+    else if (expandedIndex !== null && expandedIndex > index) {
+      setExpandedIndex(expandedIndex - 1);
+    }
   }
 
   function updateVariant(index: number, field: keyof VariantData, value: string) {
@@ -95,24 +92,21 @@ export function VariantManager({
     onChange(updated);
   }
 
-  function getVariantLabel(variant: VariantData): string {
-    if (variant.facetValueIds.size === 0) {
-      return "No options selected";
-    }
-
-    const labels: string[] = [];
-    for (const group of facetGroups) {
-      const selectedValues = group.values.filter((v) =>
-        variant.facetValueIds.has(v.id)
-      );
-      if (selectedValues.length > 0) {
-        labels.push(`${group.name}: ${selectedValues.map((v) => v.value).join(", ")}`);
-      }
-    }
-    return labels.join(" / ") || "No options selected";
+  function toggleExpand(index: number) {
+    setExpandedIndex(expandedIndex === index ? null : index);
   }
 
-  // Filter to only show facets that are relevant for variants (e.g., Size, Color)
+  function getOptionBadges(variant: VariantData) {
+    const badges: { facetName: string; value: string }[] = [];
+    for (const group of facetGroups) {
+      const selected = group.values.filter((v) => variant.facetValueIds.has(v.id));
+      for (const val of selected) {
+        badges.push({ facetName: group.name, value: val.value });
+      }
+    }
+    return badges;
+  }
+
   const variantFacetGroups = facetGroups.filter((g) => g.values.length > 0);
 
   return (
@@ -147,135 +141,270 @@ export function VariantManager({
           </span>
         </div>
       ) : (
-        <Accordion
-          type="multiple"
-          value={openItems}
-          onValueChange={setOpenItems}
-          className="space-y-2"
-        >
-          {variants.map((variant, index) => (
-            <AccordionItem
-              key={index}
-              value={`variant-${index}`}
-              className="rounded-lg border px-4"
-            >
-              <AccordionTrigger className="hover:no-underline py-3">
-                <div className="flex flex-1 items-center gap-3 text-left">
-                  <span className="text-sm font-medium">
-                    Variant {index + 1}
-                  </span>
-                  <span className="text-xs text-muted-foreground truncate max-w-[300px]">
-                    {getVariantLabel(variant)}
-                  </span>
-                  {variant.sku && (
-                    <Badge variant="secondary" className="text-xs">
-                      {variant.sku}
-                    </Badge>
-                  )}
-                  <Badge variant="outline" className="text-xs ml-auto mr-2">
-                    ${variant.price || "0"} / {variant.stock || "0"} in stock
-                  </Badge>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="pb-4">
-                <div className="space-y-4">
-                  {/* Options selection */}
-                  {variantFacetGroups.length > 0 && (
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">Options</Label>
-                      {variantFacetGroups.map((group) => (
-                        <div key={group.id} className="space-y-1.5">
-                          <span className="text-xs text-muted-foreground">
-                            {group.name}
+        <>
+          {/* Table header */}
+          <div className="hidden items-center gap-3 border-b px-3 pb-2 sm:grid sm:grid-cols-[1fr_5.5rem_4.5rem_7rem_1.5rem]">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Options
+            </span>
+            <span className="text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Price
+            </span>
+            <span className="text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Stock
+            </span>
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              SKU
+            </span>
+            <span />
+          </div>
+
+          <div className="space-y-1.5">
+            {variants.map((variant, index) => {
+              const isExpanded = expandedIndex === index;
+              const optionBadges = getOptionBadges(variant);
+              const stockNum = Number(variant.stock) || 0;
+
+              return (
+                <div
+                  key={index}
+                  className={`rounded-lg border transition-colors ${
+                    isExpanded
+                      ? "border-primary/30 shadow-sm ring-1 ring-primary/10"
+                      : "hover:bg-muted/40"
+                  }`}
+                >
+                  {/* Row */}
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(index)}
+                    className="flex w-full items-center gap-3 px-3 py-2 text-left sm:grid sm:grid-cols-[1fr_5.5rem_4.5rem_7rem_1.5rem]"
+                  >
+                    {/* Options */}
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                      <GripVertical className="size-3.5 shrink-0 text-muted-foreground/30" />
+                      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+                        {optionBadges.length > 0 ? (
+                          optionBadges.map((badge, i) => (
+                            <Badge
+                              key={i}
+                              variant="secondary"
+                              className="h-5.5 gap-1 rounded-md px-1.5 text-[11px] font-normal"
+                            >
+                              <span className="text-muted-foreground">
+                                {badge.facetName}:
+                              </span>
+                              <span className="font-medium">{badge.value}</span>
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs italic text-muted-foreground/60">
+                            No options
                           </span>
-                          <div className="flex flex-wrap gap-2">
-                            {group.values.map((val) => (
-                              <label
-                                key={val.id}
-                                className="flex items-center gap-1.5 text-sm"
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Price */}
+                    <span className="hidden text-right text-sm font-medium tabular-nums sm:block">
+                      ${variant.price || "0.00"}
+                    </span>
+
+                    {/* Stock */}
+                    <span
+                      className={`hidden text-right text-sm tabular-nums sm:block ${
+                        stockNum === 0
+                          ? "font-semibold text-destructive"
+                          : stockNum <= 10
+                            ? "font-medium text-orange-600 dark:text-orange-400"
+                            : "text-muted-foreground"
+                      }`}
+                    >
+                      {variant.stock || "0"}
+                    </span>
+
+                    {/* SKU */}
+                    <span className="hidden truncate font-mono text-xs text-muted-foreground sm:block">
+                      {variant.sku || "—"}
+                    </span>
+
+                    {/* Chevron */}
+                    <ChevronDown
+                      className={`size-4 shrink-0 text-muted-foreground/50 transition-transform duration-200 ${
+                        isExpanded ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {/* Mobile summary */}
+                  {!isExpanded && (
+                    <div className="flex items-center gap-3 border-t border-dashed px-3 py-1.5 text-xs text-muted-foreground sm:hidden">
+                      <span className="font-medium">${variant.price || "0.00"}</span>
+                      <span className="text-muted-foreground/30">&middot;</span>
+                      <span className={stockNum === 0 ? "text-destructive" : ""}>
+                        {variant.stock || "0"} in stock
+                      </span>
+                      {variant.sku && (
+                        <>
+                          <span className="text-muted-foreground/30">&middot;</span>
+                          <span className="font-mono">{variant.sku}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Expanded editor */}
+                  {isExpanded && (
+                    <div className="border-t px-4 py-4 space-y-4">
+                      {/* Options selection */}
+                      {variantFacetGroups.length > 0 && (
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium">Options</Label>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {variantFacetGroups.map((group) => (
+                              <div
+                                key={group.id}
+                                className="rounded-md border bg-muted/30 p-3 space-y-2"
                               >
-                                <Checkbox
-                                  checked={variant.facetValueIds.has(val.id)}
-                                  onCheckedChange={() =>
-                                    toggleVariantFacetValue(index, val.id)
-                                  }
-                                />
-                                {val.value}
-                              </label>
+                                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                  {group.name}
+                                </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {group.values.map((val) => {
+                                    const isSelected = variant.facetValueIds.has(val.id);
+                                    return (
+                                      <label
+                                        key={val.id}
+                                        className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm transition-all ${
+                                          isSelected
+                                            ? "border-primary/50 bg-primary/5 text-foreground shadow-sm"
+                                            : "border-transparent bg-background text-muted-foreground hover:border-border hover:text-foreground"
+                                        }`}
+                                      >
+                                        <Checkbox
+                                          checked={isSelected}
+                                          onCheckedChange={() =>
+                                            toggleVariantFacetValue(index, val.id)
+                                          }
+                                          className="size-3.5"
+                                        />
+                                        {val.value}
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              </div>
                             ))}
                           </div>
                         </div>
-                      ))}
+                      )}
+
+                      {/* Price / Stock / SKU */}
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-sm">Price *</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={variant.price}
+                            onChange={(e) =>
+                              updateVariant(index, "price", e.target.value)
+                            }
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-sm">Stock *</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={variant.stock}
+                            onChange={(e) =>
+                              updateVariant(index, "stock", e.target.value)
+                            }
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-sm">SKU</Label>
+                          <Input
+                            value={variant.sku}
+                            onChange={(e) =>
+                              updateVariant(index, "sku", e.target.value)
+                            }
+                            placeholder="VARIANT-SKU-001"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-1.5 text-xs"
+                            onClick={() => duplicateVariant(index)}
+                          >
+                            <Copy className="size-3" />
+                            Duplicate
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-1.5 text-xs text-destructive hover:text-destructive"
+                            onClick={() => removeVariant(index)}
+                          >
+                            <Trash2 className="size-3" />
+                            Remove
+                          </Button>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs text-muted-foreground"
+                          onClick={() => setExpandedIndex(null)}
+                        >
+                          Collapse
+                        </Button>
+                      </div>
                     </div>
                   )}
-
-                  {/* Price / Stock / SKU */}
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="space-y-2">
-                      <Label className="text-sm">Price *</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={variant.price}
-                        onChange={(e) =>
-                          updateVariant(index, "price", e.target.value)
-                        }
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm">Stock *</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={variant.stock}
-                        onChange={(e) =>
-                          updateVariant(index, "stock", e.target.value)
-                        }
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm">SKU</Label>
-                      <Input
-                        value={variant.sku}
-                        onChange={(e) =>
-                          updateVariant(index, "sku", e.target.value)
-                        }
-                        placeholder="VARIANT-SKU-001"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="gap-1"
-                      onClick={() => duplicateVariant(index)}
-                    >
-                      <Copy className="size-3" />
-                      Duplicate
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="gap-1 text-destructive hover:text-destructive"
-                      onClick={() => removeVariant(index)}
-                    >
-                      <Trash2 className="size-3" />
-                      Remove
-                    </Button>
-                  </div>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+              );
+            })}
+          </div>
+
+          {/* Summary bar */}
+          <div className="flex items-center justify-between rounded-lg bg-muted/40 px-4 py-2.5">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Package className="size-4" />
+              <span>
+                {variants.length} variant{variants.length === 1 ? "" : "s"}
+              </span>
+            </div>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span>
+                Total stock:{" "}
+                <span className="font-medium text-foreground tabular-nums">
+                  {variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0)}
+                </span>
+              </span>
+              <span>
+                Price:{" "}
+                <span className="font-medium text-foreground tabular-nums">
+                  ${Math.min(...variants.map((v) => Number(v.price) || 0)).toFixed(2)}
+                  {" – $"}
+                  {Math.max(...variants.map((v) => Number(v.price) || 0)).toFixed(2)}
+                </span>
+              </span>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

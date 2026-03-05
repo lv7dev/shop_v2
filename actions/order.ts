@@ -5,6 +5,7 @@ import { getSession, requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import * as Sentry from "@sentry/nextjs";
 import { sendToUser } from "@/lib/sse";
+import { checkLowStock } from "@/lib/low-stock";
 import type { OrderStatus, PaymentMethod } from "@/lib/generated/prisma/client";
 import {
   createOrderSchema,
@@ -259,6 +260,15 @@ export async function createOrder(
 
     revalidatePath("/orders");
     revalidatePath("/products");
+
+    // Check for low stock after order (non-blocking)
+    checkLowStock(
+      input.items.map((item) => ({
+        productId: item.id,
+        variantId: item.variantId,
+        quantity: item.quantity,
+      }))
+    );
 
     return { success: true, order: serializeOrder(order) };
   } catch (error) {

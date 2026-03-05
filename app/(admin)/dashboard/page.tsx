@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DollarSign, ShoppingCart, Package, Users } from "lucide-react";
+import { DollarSign, ShoppingCart, Package, Users, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { getAdminStats } from "@/services/admin";
+import { getAdminStats, getLowStockProducts, getLowStockCount } from "@/services/admin";
 import { formatPrice } from "@/lib/utils";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
 
@@ -21,7 +21,11 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default async function DashboardPage() {
-  const stats = await getAdminStats();
+  const [stats, lowStock, lowStockCount] = await Promise.all([
+    getAdminStats(),
+    getLowStockProducts(),
+    getLowStockCount(),
+  ]);
 
   const cards = [
     {
@@ -50,6 +54,27 @@ export default async function DashboardPage() {
     },
   ];
 
+  const allLowStockItems = [
+    ...lowStock.products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      stock: p.stock,
+      threshold: p.lowStockThreshold,
+      image: p.images[0] as string | undefined,
+      href: `/dashboard/products/${p.id}/edit`,
+      variant: null as string | null,
+    })),
+    ...lowStock.variants.map((v) => ({
+      id: v.id,
+      name: v.productName,
+      stock: v.stock,
+      threshold: v.lowStockThreshold,
+      image: v.images[0] as string | undefined,
+      href: `/dashboard/products/${v.productId}/edit`,
+      variant: v.sku,
+    })),
+  ].sort((a, b) => a.stock - b.stock);
+
   return (
     <div>
       <h1 className="mb-8 text-3xl font-bold">Dashboard</h1>
@@ -65,6 +90,70 @@ export default async function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* Low stock alerts */}
+      {allLowStockItems.length > 0 && (
+        <div className="mt-8 rounded-lg border border-orange-200 bg-orange-50/50 dark:border-orange-900/50 dark:bg-orange-950/20">
+          <div className="border-b border-orange-200 px-6 py-4 dark:border-orange-900/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="size-5 text-orange-600" />
+                <h2 className="text-lg font-semibold">Low Stock Alerts</h2>
+                <Badge variant="destructive" className="ml-1">
+                  {lowStockCount}
+                </Badge>
+              </div>
+              <Link
+                href="/dashboard/products?status=active"
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                View all products
+              </Link>
+            </div>
+          </div>
+          <div className="divide-y divide-orange-200 dark:divide-orange-900/50">
+            {allLowStockItems.map((item) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                className="flex items-center gap-4 px-6 py-3 transition-colors hover:bg-orange-100/50 dark:hover:bg-orange-950/30"
+              >
+                {item.image ? (
+                  <img
+                    src={item.image}
+                    alt=""
+                    className="size-10 rounded-md border object-cover"
+                  />
+                ) : (
+                  <div className="flex size-10 items-center justify-center rounded-md border bg-muted">
+                    <Package className="size-5 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{item.name}</p>
+                  {item.variant && (
+                    <p className="text-xs text-muted-foreground">
+                      SKU: {item.variant}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant={item.stock === 0 ? "destructive" : "outline"}
+                    className={
+                      item.stock === 0
+                        ? ""
+                        : "border-orange-300 bg-orange-100 text-orange-800 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-300"
+                    }
+                  >
+                    {item.stock === 0 ? "Out of stock" : `${item.stock} left`}
+                  </Badge>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent orders */}
       <div className="mt-8 rounded-lg border">

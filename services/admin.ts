@@ -209,6 +209,67 @@ export async function getAdminDiscountById(id: string) {
   });
 }
 
+export async function getLowStockProducts(limit = 10) {
+  // Products where stock <= lowStockThreshold (excluding inactive)
+  const products = await db.$queryRaw<
+    {
+      id: string;
+      name: string;
+      slug: string;
+      stock: number;
+      lowStockThreshold: number;
+      images: string[];
+    }[]
+  >`
+    SELECT id, name, slug, stock, "lowStockThreshold", images
+    FROM products
+    WHERE "isActive" = true AND stock <= "lowStockThreshold"
+    ORDER BY stock ASC, name ASC
+    LIMIT ${limit}
+  `;
+
+  // Also get variants below threshold
+  const variants = await db.$queryRaw<
+    {
+      id: string;
+      sku: string | null;
+      stock: number;
+      productId: string;
+      productName: string;
+      productSlug: string;
+      lowStockThreshold: number;
+      images: string[];
+    }[]
+  >`
+    SELECT pv.id, pv.sku, pv.stock, pv."productId",
+           p.name AS "productName", p.slug AS "productSlug",
+           p."lowStockThreshold", p.images
+    FROM product_variants pv
+    JOIN products p ON p.id = pv."productId"
+    WHERE p."isActive" = true AND pv.stock <= p."lowStockThreshold"
+    ORDER BY pv.stock ASC
+    LIMIT ${limit}
+  `;
+
+  return { products, variants };
+}
+
+export async function getLowStockCount() {
+  const [productResult, variantResult] = await Promise.all([
+    db.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*) as count FROM products
+      WHERE "isActive" = true AND stock <= "lowStockThreshold"
+    `.catch(() => [{ count: BigInt(0) }]),
+    db.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*) as count FROM product_variants pv
+      JOIN products p ON p.id = pv."productId"
+      WHERE p."isActive" = true AND pv.stock <= p."lowStockThreshold"
+    `.catch(() => [{ count: BigInt(0) }]),
+  ]);
+
+  return Number(productResult[0].count) + Number(variantResult[0].count);
+}
+
 // Simple product list for forms (discount product selection etc.)
 export async function getProductOptions() {
   return db.product.findMany({

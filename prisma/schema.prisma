@@ -109,7 +109,8 @@ model Product {
   description String?
   price       Decimal  @db.Decimal(10, 2)
   sku         String?  @unique
-  stock       Int      @default(0)
+  stock             Int      @default(0)
+  lowStockThreshold Int      @default(10)
   images      String[]
   attributes  Json?
   isActive    Boolean  @default(true)
@@ -427,6 +428,7 @@ model NotificationRead {
 enum NotificationType {
   DISCOUNT
   ORDER_UPDATE
+  LOW_STOCK
   SYSTEM
 }
 

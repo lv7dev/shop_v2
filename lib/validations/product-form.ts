@@ -15,6 +15,7 @@ export const productFormSchema = z.object({
   ),
   sku: z.string().max(100),
   stock: z.string(),
+  lowStockThreshold: z.string(),
   categoryId: z.string(),
   isActive: z.boolean(),
 });
@@ -35,6 +36,7 @@ export function formValuesToProductInput(
     price: Number(values.price),
     sku: values.sku.trim() || undefined,
     stock: Number(values.stock) || 0,
+    lowStockThreshold: Number(values.lowStockThreshold) || 10,
     images: images.filter((img) => img.trim()),
     isActive: values.isActive,
     categoryId: values.categoryId && values.categoryId !== "none" ? values.categoryId : undefined,

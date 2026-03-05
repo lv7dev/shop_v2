@@ -8,6 +8,7 @@ export const productSchema = z.object({
   price: z.number().min(0, "Price must be 0 or greater"),
   sku: z.string().max(100).optional(),
   stock: z.number().int().min(0, "Stock must be 0 or greater").default(0),
+  lowStockThreshold: z.number().int().min(0, "Threshold must be 0 or greater").default(10),
   images: z.array(z.string().url("Invalid image URL")).default([]),
   attributes: z.record(z.string(), z.string()).optional(),
   isActive: z.boolean().default(true),

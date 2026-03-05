@@ -48,6 +48,7 @@ export async function createProduct(data: unknown) {
         price: input.price,
         sku: input.sku || null,
         stock: input.stock,
+        lowStockThreshold: input.lowStockThreshold,
         images: input.images,
         attributes: input.attributes ?? undefined,
         isActive: input.isActive,
@@ -118,6 +119,7 @@ export async function updateProduct(id: string, data: unknown) {
     updateData.sku = input.sku || null;
   }
   if (input.stock !== undefined) updateData.stock = input.stock;
+  if (input.lowStockThreshold !== undefined) updateData.lowStockThreshold = input.lowStockThreshold;
   if (input.images !== undefined) updateData.images = input.images;
   if (input.attributes !== undefined) updateData.attributes = input.attributes ?? undefined;
   if (input.isActive !== undefined) updateData.isActive = input.isActive;

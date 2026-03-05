@@ -3,6 +3,8 @@ import Link from "next/link";
 import { LayoutDashboard, Package, ShoppingCart, Users, ArrowLeft, FolderTree, Tags, Percent, Settings } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { requireAdmin } from "@/lib/auth";
+import { NotificationSync } from "@/components/notifications/notification-sync";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -28,6 +30,7 @@ export default async function AdminLayout({
 
   return (
     <>
+    <NotificationSync isAuthenticated={true} />
     <style>{`html, body { height: 100%; overflow: hidden; }`}</style>
     <div className="flex h-dvh overflow-hidden">
       {/* Sidebar - fixed */}
@@ -53,11 +56,12 @@ export default async function AdminLayout({
 
       {/* Main content - scrollable */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-16 flex-shrink-0 items-center border-b px-6">
+        <header className="flex h-16 flex-shrink-0 items-center justify-between border-b px-6">
           <Link href="/" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="size-4" />
             Back to store
           </Link>
+          <NotificationBell />
         </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
