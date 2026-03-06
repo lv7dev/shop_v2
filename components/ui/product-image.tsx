@@ -28,11 +28,5 @@ export function ProductImage({
     );
   }
 
-  return (
-    <Image
-      alt={alt}
-      {...props}
-      onError={() => setHasError(true)}
-    />
-  );
+  return <Image alt={alt} {...props} onError={() => setHasError(true)} />;
 }

@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
-import { DollarSign, ShoppingCart, Package, Users, AlertTriangle } from "lucide-react";
+import { DollarSign, ShoppingCart, Package, Users, AlertTriangle, TrendingUp, BarChart3, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { getAdminStats, getLowStockProducts, getLowStockCount } from "@/services/admin";
+import { getAdminStats, getLowStockProducts, getLowStockCount, getRevenueOverTime, getOrdersPerDay, getTopSellingProducts } from "@/services/admin";
 import { formatPrice } from "@/lib/utils";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
+import { RevenueChart } from "@/components/admin/charts/revenue-chart";
+import { OrdersChart } from "@/components/admin/charts/orders-chart";
+import { TopProductsChart } from "@/components/admin/charts/top-products-chart";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard",
@@ -21,10 +25,13 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default async function DashboardPage() {
-  const [stats, lowStock, lowStockCount] = await Promise.all([
+  const [stats, lowStock, lowStockCount, revenueData, ordersData, topProducts] = await Promise.all([
     getAdminStats(),
     getLowStockProducts(),
     getLowStockCount(),
+    getRevenueOverTime(30),
+    getOrdersPerDay(30),
+    getTopSellingProducts(10),
   ]);
 
   const cards = [
@@ -89,6 +96,31 @@ export default async function DashboardPage() {
             <p className="mt-2 text-2xl font-bold">{stat.value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Analytics Charts */}
+      <div className="mt-8 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-lg border p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <TrendingUp className="size-5 text-green-600" />
+            <h2 className="text-lg font-semibold">Revenue (Last 30 Days)</h2>
+          </div>
+          <RevenueChart data={revenueData} />
+        </div>
+        <div className="rounded-lg border p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <BarChart3 className="size-5 text-blue-600" />
+            <h2 className="text-lg font-semibold">Orders Per Day</h2>
+          </div>
+          <OrdersChart data={ordersData} />
+        </div>
+      </div>
+      <div className="mt-4 rounded-lg border p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <Trophy className="size-5 text-purple-600" />
+          <h2 className="text-lg font-semibold">Top Selling Products</h2>
+        </div>
+        <TopProductsChart data={topProducts} />
       </div>
 
       {/* Low stock alerts */}

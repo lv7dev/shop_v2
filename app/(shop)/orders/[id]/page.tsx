@@ -25,6 +25,7 @@ import {
 } from "@/lib/constants";
 import { PaymentStatusPoller } from "@/components/orders/payment-status-poller";
 import { RetryPaymentButton } from "@/components/orders/retry-payment-button";
+import { DownloadInvoiceButton } from "@/components/orders/download-invoice-button";
 
 export const metadata: Metadata = {
   title: "Order Detail",
@@ -358,13 +359,14 @@ export default async function OrderDetailPage({
         </div>
       )}
 
-      <div className="mt-8 flex gap-3">
+      <div className="mt-8 flex flex-wrap gap-3">
         <Button variant="outline" asChild>
           <Link href="/orders">View All Orders</Link>
         </Button>
         <Button asChild>
           <Link href="/products">Continue Shopping</Link>
         </Button>
+        <DownloadInvoiceButton orderId={order.id} />
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
+import { sendWelcomeEmail } from "@/lib/email";
 import type { CartDbItemInput } from "@/types/cart";
 import type { EnrichedCartItem } from "@/actions/cart-db";
 
@@ -266,6 +267,9 @@ export async function createUserAndSession(
   });
 
   await createSession({ userId: user.id, role: user.role });
+
+  // Send welcome email (fire-and-forget)
+  sendWelcomeEmail(user.email, user.name).catch(console.error);
 
   if (localCartItems && localCartItems.length > 0) {
     await db.cartItem.createMany({

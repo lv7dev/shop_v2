@@ -1,4 +1,98 @@
 import { db } from "@/lib/db";
+import type { Prisma } from "@/lib/generated/prisma";
+
+export const SORT_OPTIONS = [
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+  { value: "price-low", label: "Price: Low to High" },
+  { value: "price-high", label: "Price: High to Low" },
+  { value: "rating", label: "Highest Rated" },
+  { value: "popular", label: "Most Popular" },
+] as const;
+
+export type SortOption = (typeof SORT_OPTIONS)[number]["value"];
+
+function getOrderBy(sort?: string): Prisma.ProductOrderByWithRelationInput {
+  switch (sort) {
+    case "oldest":
+      return { createdAt: "asc" };
+    case "price-low":
+      return { price: "asc" };
+    case "price-high":
+      return { price: "desc" };
+    case "popular":
+      return { orderItems: { _count: "desc" } };
+    case "newest":
+    default:
+      return { createdAt: "desc" };
+  }
+}
+
+/**
+ * Handles "Highest Rated" sort separately because Prisma's relation orderBy
+ * only supports _count, not _avg. We fetch matching IDs with review ratings,
+ * sort by average rating in memory, then paginate.
+ */
+async function getProductsSortedByRating(
+  where: Prisma.ProductWhereInput,
+  page: number,
+  limit: number
+) {
+  const [productsWithRatings, total] = await Promise.all([
+    db.product.findMany({
+      where,
+      select: {
+        id: true,
+        createdAt: true,
+        reviews: { select: { rating: true } },
+      },
+    }),
+    db.product.count({ where }),
+  ]);
+
+  // Sort by average rating descending, then by newest as tiebreaker
+  const sorted = productsWithRatings
+    .map((p) => ({
+      id: p.id,
+      avgRating:
+        p.reviews.length > 0
+          ? p.reviews.reduce((sum, r) => sum + r.rating, 0) / p.reviews.length
+          : 0,
+      createdAt: p.createdAt,
+    }))
+    .sort(
+      (a, b) =>
+        b.avgRating - a.avgRating ||
+        b.createdAt.getTime() - a.createdAt.getTime()
+    );
+
+  // Paginate in memory
+  const pageIds = sorted
+    .slice((page - 1) * limit, page * limit)
+    .map((p) => p.id);
+
+  // Fetch full product records for this page
+  const products =
+    pageIds.length > 0
+      ? await db.product.findMany({
+          where: { id: { in: pageIds } },
+          include: { category: true },
+        })
+      : [];
+
+  // Reorder to match the sorted order
+  const productMap = new Map(products.map((p) => [p.id, p]));
+  const orderedProducts = pageIds
+    .map((id) => productMap.get(id))
+    .filter(Boolean) as typeof products;
+
+  return {
+    products: orderedProducts,
+    total,
+    totalPages: Math.ceil(total / limit),
+    currentPage: page,
+  };
+}
 
 export async function getProducts({
   categorySlug,
@@ -8,6 +102,7 @@ export async function getProducts({
   maxPrice,
   page = 1,
   limit = 12,
+  sort,
 }: {
   categorySlug?: string;
   search?: string;
@@ -16,6 +111,7 @@ export async function getProducts({
   maxPrice?: number;
   page?: number;
   limit?: number;
+  sort?: string;
 } = {}) {
   // Build facet AND conditions: each facet key is ANDed, values within are ORed
   const facetConditions =
@@ -36,7 +132,7 @@ export async function getProducts({
   if (minPrice !== undefined) priceFilter.gte = minPrice;
   if (maxPrice !== undefined) priceFilter.lte = maxPrice;
 
-  const where = {
+  const where: Prisma.ProductWhereInput = {
     isActive: true,
     ...(categorySlug && { category: { slug: categorySlug } }),
     ...(search && { name: { contains: search, mode: "insensitive" as const } }),
@@ -44,13 +140,18 @@ export async function getProducts({
     ...(facetConditions.length > 0 && { AND: facetConditions }),
   };
 
+  // Rating sort requires a special approach (Prisma can't orderBy relation averages)
+  if (sort === "rating") {
+    return getProductsSortedByRating(where, page, limit);
+  }
+
   const [products, total] = await Promise.all([
     db.product.findMany({
       where,
       include: { category: true },
       skip: (page - 1) * limit,
       take: limit,
-      orderBy: { createdAt: "desc" },
+      orderBy: getOrderBy(sort),
     }),
     db.product.count({ where }),
   ]);

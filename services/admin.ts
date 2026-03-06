@@ -270,6 +270,68 @@ export async function getLowStockCount() {
   return Number(productResult[0].count) + Number(variantResult[0].count);
 }
 
+// ──────────────────────────────────────
+// Analytics
+// ──────────────────────────────────────
+
+export async function getRevenueOverTime(days = 30) {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+
+  const rows = await db.$queryRaw<{ date: Date; revenue: number }[]>`
+    SELECT DATE("createdAt") as date, COALESCE(SUM(total), 0)::float as revenue
+    FROM orders
+    WHERE "createdAt" >= ${since}
+      AND status NOT IN ('CANCELLED', 'REFUNDED')
+    GROUP BY DATE("createdAt")
+    ORDER BY date ASC
+  `;
+
+  // Fill in missing days with 0
+  const map = new Map(rows.map((r) => [new Date(r.date).toISOString().slice(0, 10), r.revenue]));
+  const result: { date: string; revenue: number }[] = [];
+  for (let d = new Date(since); d <= new Date(); d.setDate(d.getDate() + 1)) {
+    const key = d.toISOString().slice(0, 10);
+    result.push({ date: key, revenue: map.get(key) ?? 0 });
+  }
+  return result;
+}
+
+export async function getOrdersPerDay(days = 30) {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+
+  const rows = await db.$queryRaw<{ date: Date; orders: number }[]>`
+    SELECT DATE("createdAt") as date, COUNT(*)::int as orders
+    FROM orders
+    WHERE "createdAt" >= ${since}
+    GROUP BY DATE("createdAt")
+    ORDER BY date ASC
+  `;
+
+  const map = new Map(rows.map((r) => [new Date(r.date).toISOString().slice(0, 10), r.orders]));
+  const result: { date: string; orders: number }[] = [];
+  for (let d = new Date(since); d <= new Date(); d.setDate(d.getDate() + 1)) {
+    const key = d.toISOString().slice(0, 10);
+    result.push({ date: key, orders: map.get(key) ?? 0 });
+  }
+  return result;
+}
+
+export async function getTopSellingProducts(limit = 10) {
+  const rows = await db.$queryRaw<{ name: string; sold: number }[]>`
+    SELECT p.name, COALESCE(SUM(oi.quantity), 0)::int as sold
+    FROM order_items oi
+    JOIN products p ON p.id = oi."productId"
+    JOIN orders o ON o.id = oi."orderId"
+    WHERE o.status NOT IN ('CANCELLED', 'REFUNDED')
+    GROUP BY p.id, p.name
+    ORDER BY sold DESC
+    LIMIT ${limit}
+  `;
+  return rows;
+}
+
 // Simple product list for forms (discount product selection etc.)
 export async function getProductOptions() {
   return db.product.findMany({

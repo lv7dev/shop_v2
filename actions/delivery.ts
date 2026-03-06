@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import * as Sentry from "@sentry/nextjs";
 import { getDeliverySettings } from "@/actions/settings";
 import { sendToUser } from "@/lib/sse";
+import { sendDeliveryConfirmationEmail } from "@/lib/email";
 
 // Common country code → full name mapping for geocoding
 const COUNTRY_NAMES: Record<string, string> = {
@@ -227,6 +228,16 @@ export async function markOrderDelivered(orderId: string) {
     } catch {
       // Don't fail delivery if notification fails
     }
+
+    // Send delivery email (fire-and-forget)
+    db.user
+      .findUnique({ where: { id: order.userId }, select: { email: true } })
+      .then((user) => {
+        if (user) {
+          sendDeliveryConfirmationEmail(user.email, order.orderNumber, order.id).catch(console.error);
+        }
+      })
+      .catch(console.error);
 
     revalidatePath("/orders");
     revalidatePath(`/orders/${orderId}`);

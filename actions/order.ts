@@ -11,6 +11,11 @@ import {
   createOrderSchema,
   orderStatusSchema,
 } from "@/lib/validations/order";
+import {
+  sendOrderConfirmationEmail,
+  sendShippingUpdateEmail,
+  sendDeliveryConfirmationEmail,
+} from "@/lib/email";
 
 function serializeOrder(order: Record<string, unknown>) {
   return {
@@ -261,6 +266,51 @@ export async function createOrder(
     revalidatePath("/orders");
     revalidatePath("/products");
 
+    // Send order confirmation email (fire-and-forget)
+    (async () => {
+      try {
+        const user = await db.user.findUnique({
+          where: { id: userId },
+          select: { email: true },
+        });
+        if (!user) return;
+
+        const address = order.addressId
+          ? await db.address.findUnique({
+              where: { id: order.addressId },
+              select: { name: true, street: true, city: true, state: true, zipCode: true, country: true },
+            })
+          : null;
+
+        // Build item names from the products we already fetched
+        const variantMap = new Map(variants.map((v) => [v.id, v]));
+        const emailItems = order.items.map((item: { productId: string; variantId: string | null; quantity: number; price: unknown }) => {
+          const product = products.find((p) => p.id === item.productId);
+          const variant = item.variantId ? variantMap.get(item.variantId) : null;
+          return {
+            name: product?.name ?? "Unknown Product",
+            quantity: item.quantity,
+            price: Number(item.price),
+            variantLabel: variant ? variant.sku : undefined,
+          };
+        });
+
+        await sendOrderConfirmationEmail(user.email, {
+          orderNumber: order.orderNumber,
+          orderId: order.id,
+          items: emailItems,
+          subtotal: Number(order.subtotal),
+          shippingCost: Number(order.shippingCost),
+          tax: Number(order.tax),
+          discountAmount: Number(order.discountAmount),
+          total: Number(order.total),
+          address,
+        });
+      } catch (e) {
+        console.error("Failed to send order confirmation email:", e);
+      }
+    })();
+
     // Check for low stock after order (non-blocking)
     checkLowStock(
       input.items.map((item) => ({
@@ -324,6 +374,29 @@ export async function updateOrderStatus(orderId: string, status: string) {
         // Don't fail the status update if notification fails
         console.error("Failed to create shipped notification:", notifError);
       }
+
+      // Send shipping email (fire-and-forget)
+      db.user
+        .findUnique({ where: { id: order.userId }, select: { email: true } })
+        .then((user) => {
+          if (user) {
+            sendShippingUpdateEmail(user.email, order.orderNumber, order.id).catch(console.error);
+          }
+        })
+        .catch(console.error);
+    }
+
+    // Notify user when order is delivered
+    if (parsed.data === "DELIVERED") {
+      // Send delivery email (fire-and-forget)
+      db.user
+        .findUnique({ where: { id: order.userId }, select: { email: true } })
+        .then((user) => {
+          if (user) {
+            sendDeliveryConfirmationEmail(user.email, order.orderNumber, order.id).catch(console.error);
+          }
+        })
+        .catch(console.error);
     }
 
     revalidatePath("/orders");

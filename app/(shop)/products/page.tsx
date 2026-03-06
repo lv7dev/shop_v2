@@ -4,9 +4,10 @@ import dynamic from "next/dynamic";
 import { getProducts, getActiveDiscountsForProducts } from "@/services/products";
 import { getCategories } from "@/services/categories";
 import { getFilterableFacets } from "@/services/facets";
-import { ProductCard } from "@/components/products/product-card";
 import { Pagination } from "@/components/products/pagination";
+import { LoadMoreProducts } from "@/components/products/load-more-products";
 import { ITEMS_PER_PAGE, PER_PAGE_OPTIONS } from "@/lib/constants";
+import { ProductSort } from "@/components/products/product-sort";
 import { Package } from "lucide-react";
 
 const ProductFilters = dynamic(
@@ -21,7 +22,7 @@ type Props = {
 };
 
 // Known non-facet params
-const RESERVED_PARAMS = new Set(["category", "search", "page", "minPrice", "maxPrice", "perPage"]);
+const RESERVED_PARAMS = new Set(["category", "search", "page", "minPrice", "maxPrice", "perPage", "sort"]);
 
 function parseFacetParams(
   params: Record<string, string | string[] | undefined>
@@ -74,6 +75,7 @@ export default async function ProductsPage({ searchParams }: Props) {
   const perPage = typeof params.perPage === "string" && PER_PAGE_OPTIONS.includes(Number(params.perPage))
     ? Number(params.perPage)
     : ITEMS_PER_PAGE;
+  const sort = typeof params.sort === "string" ? params.sort : undefined;
 
   const [{ products, totalPages, currentPage, total }, categories, filterableFacets] =
     await Promise.all([
@@ -85,6 +87,7 @@ export default async function ProductsPage({ searchParams }: Props) {
         maxPrice,
         page,
         limit: perPage,
+        sort,
       }),
       getCategories(),
       getFilterableFacets({ categorySlug, search, activeFacets: facets }),
@@ -101,6 +104,7 @@ export default async function ProductsPage({ searchParams }: Props) {
     minPrice: minPrice !== undefined ? String(minPrice) : undefined,
     maxPrice: maxPrice !== undefined ? String(maxPrice) : undefined,
     perPage: perPage !== ITEMS_PER_PAGE ? String(perPage) : undefined,
+    sort,
   };
   for (const [key, values] of Object.entries(facets)) {
     paginationParams[key] = values.join(",");
@@ -108,13 +112,16 @@ export default async function ProductsPage({ searchParams }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-8 flex items-end justify-between">
+      <div className="mb-8 flex items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">All Products</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {total} {total === 1 ? "product" : "products"} found
           </p>
         </div>
+        <Suspense>
+          <ProductSort />
+        </Suspense>
       </div>
 
       <div className="lg:flex lg:gap-8">
@@ -138,28 +145,41 @@ export default async function ProductsPage({ searchParams }: Props) {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {products.map((product, i) => (
-                  <ProductCard
-                    key={product.id}
-                    id={product.id}
-                    name={product.name}
-                    slug={product.slug}
-                    price={Number(product.price)}
-                    images={product.images}
-                    stock={product.stock}
-                    category={product.category}
-                    priority={i < 3}
-                    activeDiscount={discountMap.get(product.id) ?? null}
-                  />
-                ))}
-              </div>
-              <Pagination
-                currentPage={currentPage}
+              <LoadMoreProducts
+                key={`${sort ?? "newest"}-${categorySlug}-${search}-${minPrice}-${maxPrice}-${JSON.stringify(facets)}`}
+                initialProducts={products.map((p) => {
+                  const cat = (p as typeof p & { category: { name: string; slug: string } | null }).category;
+                  return {
+                    id: p.id,
+                    name: p.name,
+                    slug: p.slug,
+                    price: Number(p.price),
+                    images: p.images,
+                    stock: p.stock,
+                    category: cat ? { name: cat.name, slug: cat.slug } : null,
+                    activeDiscount: discountMap.get(p.id) ?? null,
+                  };
+                })}
+                total={total}
+                perPage={perPage}
                 totalPages={totalPages}
-                basePath="/products"
-                searchParams={paginationParams}
+                filterParams={{
+                  categorySlug,
+                  search,
+                  facets: Object.keys(facets).length > 0 ? facets : undefined,
+                  minPrice,
+                  maxPrice,
+                  sort,
+                }}
               />
+              <noscript>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  basePath="/products"
+                  searchParams={paginationParams}
+                />
+              </noscript>
             </>
           )}
         </div>
