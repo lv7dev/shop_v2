@@ -49,9 +49,8 @@ export function OrdersChart({ data }: Props) {
           width={40}
         />
         <Tooltip
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          formatter={((value: any) => [value, "Orders"]) as any}
-          labelFormatter={((label: any) => formatDate(label)) as any}
+          formatter={(value: number | string) => [value, "Orders"]}
+          labelFormatter={(label: string) => formatDate(label)}
           contentStyle={{
             borderRadius: "8px",
             border: "1px solid hsl(var(--border))",

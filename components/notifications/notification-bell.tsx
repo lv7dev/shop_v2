@@ -155,11 +155,6 @@ export function NotificationBell() {
     }
   }
 
-  async function handleMarkRead(id: string) {
-    markRead(id);
-    await markNotificationRead(id);
-  }
-
   async function handleMarkAllRead() {
     markAllRead();
     await markAllNotificationsRead();

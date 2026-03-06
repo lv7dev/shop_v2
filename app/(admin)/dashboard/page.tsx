@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { DollarSign, ShoppingCart, Package, Users, AlertTriangle, TrendingUp, BarChart3, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -151,9 +151,11 @@ export default async function DashboardPage() {
                 className="flex items-center gap-4 px-6 py-3 transition-colors hover:bg-orange-100/50 dark:hover:bg-orange-950/30"
               >
                 {item.image ? (
-                  <img
+                  <Image
                     src={item.image}
                     alt=""
+                    width={40}
+                    height={40}
                     className="size-10 rounded-md border object-cover"
                   />
                 ) : (
