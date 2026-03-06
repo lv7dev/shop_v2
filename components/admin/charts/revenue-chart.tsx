@@ -64,8 +64,10 @@ export function RevenueChart({ data }: Props) {
           width={70}
         />
         <Tooltip
-          formatter={(value: number | string) => [formatCurrency(Number(value)), "Revenue"]}
-          labelFormatter={(label: string) => formatDate(label)}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          formatter={((value: number) => [formatCurrency(value), "Revenue"]) as any}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          labelFormatter={((label: string) => formatDate(label)) as any}
           contentStyle={{
             borderRadius: "8px",
             border: "1px solid hsl(var(--border))",

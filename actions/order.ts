@@ -291,7 +291,7 @@ export async function createOrder(
             name: product?.name ?? "Unknown Product",
             quantity: item.quantity,
             price: Number(item.price),
-            variantLabel: variant ? variant.sku : undefined,
+            variantLabel: variant?.sku ?? undefined,
           };
         });
 

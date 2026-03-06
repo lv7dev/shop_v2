@@ -269,7 +269,7 @@ export async function createUserAndSession(
   await createSession({ userId: user.id, role: user.role });
 
   // Send welcome email (fire-and-forget)
-  sendWelcomeEmail(user.email, user.name).catch(console.error);
+  sendWelcomeEmail(user.email, user.name ?? "Customer").catch(console.error);
 
   if (localCartItems && localCartItems.length > 0) {
     await db.cartItem.createMany({
