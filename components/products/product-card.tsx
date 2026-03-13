@@ -1,4 +1,7 @@
-import Link from "next/link";
+"use client";
+
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/routing";
 import { ShoppingCart, Tag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,10 +39,12 @@ export function ProductCard({
   sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
   activeDiscount,
 }: ProductCardProps) {
+  const t = useTranslations("product");
+  const locale = useLocale();
   const discountLabel = activeDiscount
     ? activeDiscount.type === "PERCENTAGE"
-      ? `${activeDiscount.value}% OFF`
-      : `$${activeDiscount.value} OFF`
+      ? `${activeDiscount.value}% ${t("off")}`
+      : `${formatPrice(activeDiscount.value, locale)} ${t("off")}`
     : null;
 
   return (
@@ -69,7 +74,7 @@ export function ProductCard({
           {stock === 0 && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50">
               <Badge variant="secondary" className="text-sm">
-                Out of Stock
+                {t("outOfStock")}
               </Badge>
             </div>
           )}
@@ -96,12 +101,12 @@ export function ProductCard({
           </h3>
         </Link>
         <div className="flex items-center gap-2">
-          <span className="text-lg font-bold">{formatPrice(price)}</span>
+          <span className="text-lg font-bold">{formatPrice(price, locale)}</span>
         </div>
         {activeDiscount && (
           <div className="flex items-center gap-1.5 rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 dark:bg-green-950/30 dark:text-green-400">
             <Tag className="size-3" />
-            Use code <span className="font-bold">{activeDiscount.code}</span> for {discountLabel}
+            {t("useCode", { code: activeDiscount.code, discount: discountLabel! })}
           </div>
         )}
         <AddToCartButton

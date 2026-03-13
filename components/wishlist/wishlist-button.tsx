@@ -2,6 +2,7 @@
 
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ export function WishlistButton({
   variant = "icon",
   className,
 }: WishlistButtonProps) {
+  const t = useTranslations("wishlist");
   const items = useWishlistStore((s) => s.items);
   const toggleItem = useWishlistStore((s) => s.toggleItem);
   const hydrated = useWishlistStore((s) => s._hydrated);
@@ -45,9 +47,9 @@ export function WishlistButton({
     });
 
     if (isWishlisted) {
-      toast.success(`${product.name} removed from wishlist`);
+      toast.success(t("removedFromWishlist"));
     } else {
-      toast.success(`${product.name} added to wishlist`);
+      toast.success(t("addedToWishlist"));
     }
   }
 
@@ -60,7 +62,7 @@ export function WishlistButton({
           "flex size-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-all hover:bg-white hover:scale-110",
           className
         )}
-        aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+        aria-label={isWishlisted ? t("removeFromWishlist") : t("addToWishlist")}
       >
         <Heart
           fill={hydrated && isWishlisted ? "currentColor" : "none"}
@@ -89,7 +91,7 @@ export function WishlistButton({
           hydrated && isWishlisted ? "text-red-500" : ""
         )}
       />
-      {hydrated && isWishlisted ? "In Wishlist" : "Add to Wishlist"}
+      {hydrated && isWishlisted ? t("inWishlist") : t("addToWishlist")}
     </Button>
   );
 }

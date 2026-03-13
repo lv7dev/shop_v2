@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
+import { useTranslations } from "next-intl";
 import {
   ShoppingCart,
   Heart,
@@ -24,6 +25,7 @@ import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { SearchBar } from "@/components/layout/search-bar";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { APP_NAME } from "@/lib/constants";
 import { logout } from "@/actions/auth";
 
@@ -31,12 +33,6 @@ const MobileMenu = dynamic(
   () => import("./mobile-menu").then((mod) => mod.MobileMenu),
   { ssr: false }
 );
-
-const NAV_ITEMS = [
-  { label: "Home", href: "/" },
-  { label: "Products", href: "/products" },
-  { label: "Categories", href: "/categories" },
-];
 
 type NavbarProps = {
   user?: {
@@ -48,6 +44,7 @@ type NavbarProps = {
 };
 
 export function Navbar({ user }: NavbarProps) {
+  const t = useTranslations();
   const hydrated = useCartStore((s) => s._hydrated);
   const totalItems = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
   const clearCart = useCartStore((s) => s.clearCart);
@@ -72,7 +69,11 @@ export function Navbar({ user }: NavbarProps) {
 
         {/* Desktop Nav */}
         <nav className="hidden items-center gap-6 md:flex">
-          {NAV_ITEMS.map((link) => (
+          {[
+            { label: t("common.home"), href: "/" as const },
+            { label: t("common.products"), href: "/products" as const },
+            { label: t("common.categories"), href: "/categories" as const },
+          ].map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -86,6 +87,7 @@ export function Navbar({ user }: NavbarProps) {
         {/* Actions */}
         <div className="flex items-center gap-2">
           <SearchBar />
+          <LanguageSwitcher />
           {user && <NotificationBell />}
           <Button variant="ghost" size="icon" asChild>
             <Link href="/wishlist" className="relative">
@@ -121,15 +123,15 @@ export function Navbar({ user }: NavbarProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">{user.name || "User"}</p>
+                  <p className="text-sm font-medium">{user.name || t("common.user")}</p>
                   <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/account">My Account</Link>
+                  <Link href="/account">{t("nav.myAccount")}</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/orders">My Orders</Link>
+                  <Link href="/orders">{t("nav.myOrders")}</Link>
                 </DropdownMenuItem>
                 {user.role === "ADMIN" && (
                   <>
@@ -137,7 +139,7 @@ export function Navbar({ user }: NavbarProps) {
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard">
                         <LayoutDashboard className="mr-2 size-4" />
-                        Admin Dashboard
+                        {t("nav.adminDashboard")}
                       </Link>
                     </DropdownMenuItem>
                   </>
@@ -148,13 +150,13 @@ export function Navbar({ user }: NavbarProps) {
                   className="text-destructive focus:text-destructive"
                 >
                   <LogOut className="mr-2 size-4" />
-                  Sign Out
+                  {t("common.signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
-              <Link href="/login">Sign In</Link>
+              <Link href="/login">{t("common.signIn")}</Link>
             </Button>
           )}
 

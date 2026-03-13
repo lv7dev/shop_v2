@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -45,6 +46,7 @@ export function AddressFormDialog({
   onSuccess,
 }: AddressFormDialogProps) {
   const router = useRouter();
+  const t = useTranslations("account.address");
   const [open, setOpen] = useState(false);
   const isEditing = !!address;
 
@@ -78,7 +80,7 @@ export function AddressFormDialog({
       : await createAddress(values);
 
     if (result.success) {
-      toast.success(isEditing ? "Address updated" : "Address added");
+      toast.success(isEditing ? t("updated") : t("added"));
       setOpen(false);
       if (!isEditing) reset();
       router.refresh();
@@ -94,29 +96,27 @@ export function AddressFormDialog({
         {trigger ?? (
           <Button size="sm" className="gap-2">
             <Plus className="size-4" />
-            Add Address
+            {t("addAddress")}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Edit Address" : "Add New Address"}
+            {isEditing ? t("editAddress") : t("addNewAddress")}
           </DialogTitle>
           <DialogDescription>
-            {isEditing
-              ? "Update your shipping address."
-              : "Add a new shipping address to your account."}
+            {isEditing ? t("editDesc") : t("addDesc")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="addr-name">Full Name *</Label>
+              <Label htmlFor="addr-name">{t("fullName")}</Label>
               <Input
                 id="addr-name"
                 {...register("name")}
-                placeholder="John Doe"
+                placeholder={t("namePlaceholder")}
               />
               {errors.name && (
                 <p className="text-sm text-destructive">
@@ -125,21 +125,21 @@ export function AddressFormDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="addr-phone">Phone</Label>
+              <Label htmlFor="addr-phone">{t("phone")}</Label>
               <Input
                 id="addr-phone"
                 {...register("phone")}
-                placeholder="+1 (555) 123-4567"
+                placeholder={t("phonePlaceholder")}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="addr-street">Street Address *</Label>
+            <Label htmlFor="addr-street">{t("streetAddress")}</Label>
             <Input
               id="addr-street"
               {...register("street")}
-              placeholder="123 Main St"
+              placeholder={t("streetPlaceholder")}
             />
             {errors.street && (
               <p className="text-sm text-destructive">
@@ -150,11 +150,11 @@ export function AddressFormDialog({
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="addr-city">City *</Label>
+              <Label htmlFor="addr-city">{t("city")}</Label>
               <Input
                 id="addr-city"
                 {...register("city")}
-                placeholder="New York"
+                placeholder={t("cityPlaceholder")}
               />
               {errors.city && (
                 <p className="text-sm text-destructive">
@@ -163,11 +163,11 @@ export function AddressFormDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="addr-state">State *</Label>
+              <Label htmlFor="addr-state">{t("state")}</Label>
               <Input
                 id="addr-state"
                 {...register("state")}
-                placeholder="NY"
+                placeholder={t("statePlaceholder")}
               />
               {errors.state && (
                 <p className="text-sm text-destructive">
@@ -176,11 +176,11 @@ export function AddressFormDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="addr-zip">ZIP Code *</Label>
+              <Label htmlFor="addr-zip">{t("zipCode")}</Label>
               <Input
                 id="addr-zip"
                 {...register("zipCode")}
-                placeholder="10001"
+                placeholder={t("zipPlaceholder")}
               />
               {errors.zipCode && (
                 <p className="text-sm text-destructive">
@@ -191,11 +191,11 @@ export function AddressFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="addr-country">Country *</Label>
+            <Label htmlFor="addr-country">{t("country")}</Label>
             <Input
               id="addr-country"
               {...register("country")}
-              placeholder="United States"
+              placeholder={t("countryPlaceholder")}
             />
             {errors.country && (
               <p className="text-sm text-destructive">
@@ -213,7 +213,7 @@ export function AddressFormDialog({
               }
             />
             <Label htmlFor="addr-default" className="cursor-pointer text-sm">
-              Set as default address
+              {t("setAsDefault")}
             </Label>
           </div>
 
@@ -223,18 +223,18 @@ export function AddressFormDialog({
               variant="outline"
               onClick={() => setOpen(false)}
             >
-              Cancel
+              {t("cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  Saving...
+                  {t("saving")}
                 </>
               ) : isEditing ? (
-                "Update"
+                t("update")
               ) : (
-                "Add Address"
+                t("addAddress")
               )}
             </Button>
           </div>

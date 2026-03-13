@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link } from "@/i18n/routing";
+import { useRouter } from "@/i18n/routing";
+import { useTranslations } from "next-intl";
 import { sendRegistrationOtp, verifyRegistrationOtp } from "@/actions/otp";
 import { useCartStore } from "@/store/cart-store";
 import { OtpInput } from "@/components/forms/otp-input";
 
 export function RegisterForm() {
+  const t = useTranslations();
   const router = useRouter();
   const items = useCartStore((s) => s.items);
 
@@ -113,12 +115,12 @@ export function RegisterForm() {
           />
         </div>
         <h1 className="mt-4 text-3xl font-bold tracking-tight text-white">
-          {step === "form" ? "Create Account" : "Verify Email"}
+          {step === "form" ? t("auth.createAccount") : t("auth.verifyEmail")}
         </h1>
         <p className="mt-2 text-sm text-white/70">
           {step === "form"
-            ? "Sign up to get started"
-            : "Enter the 6-digit code we sent to your email"}
+            ? t("auth.signUpDescription")
+            : t("auth.otpDescription")}
         </p>
       </div>
 
@@ -135,12 +137,12 @@ export function RegisterForm() {
             <fieldset disabled={loading} className="space-y-5">
               <div>
                 <label className="mb-2 block text-sm font-medium text-white/80">
-                  Full Name
+                  {t("auth.fullName")}
                 </label>
                 <input
                   type="text"
                   name="name"
-                  placeholder="Enter your name"
+                  placeholder={t("auth.enterName")}
                   required
                   defaultValue={formValues.name}
                   className="w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-4 text-base text-white placeholder-white/50 outline-none transition focus:border-white/40 focus:bg-white/15"
@@ -149,7 +151,7 @@ export function RegisterForm() {
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-white/80">
-                  Email Address
+                  {t("auth.emailAddress")}
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2">
@@ -223,8 +225,9 @@ export function RegisterForm() {
             <div className="flex-1 border-t border-white/20" />
           </div>
 
-          {/* Social Buttons */}
+          {/* Social Buttons — API routes require <a>, not <Link> */}
           <div className="mt-6 flex gap-4">
+            {/* eslint-disable @next/next/no-html-link-for-pages */}
             <a
               href="/api/auth/google"
               className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 py-3 text-sm font-medium text-white transition hover:bg-white/20"
@@ -239,6 +242,7 @@ export function RegisterForm() {
               <Image src="/icons/facebook-icon.svg" alt="" width={16} height={16} />
               Facebook
             </a>
+            {/* eslint-enable @next/next/no-html-link-for-pages */}
           </div>
 
           <div className="mt-8 text-center">

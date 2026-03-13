@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/routing";
+import { useSearchParams, usePathname } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -52,7 +54,8 @@ function SearchInput({
   );
 }
 
-export function DataTableSearch({ placeholder = "Search..." }: { placeholder?: string }) {
+export function DataTableSearch({ placeholder }: { placeholder?: string }) {
+  const t = useTranslations("admin.common");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -76,7 +79,7 @@ export function DataTableSearch({ placeholder = "Search..." }: { placeholder?: s
     <SearchInput
       key={currentQ}
       initialValue={currentQ}
-      placeholder={placeholder}
+      placeholder={placeholder ?? t("search")}
       onSearch={updateSearch}
     />
   );

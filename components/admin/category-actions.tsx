@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/routing";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,8 @@ import { deleteCategory } from "@/actions/category";
 
 export function CategoryDeleteButton({ categoryId }: { categoryId: string }) {
   const router = useRouter();
+  const t = useTranslations("admin.confirm");
+  const tc = useTranslations("admin.common");
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -17,7 +20,7 @@ export function CategoryDeleteButton({ categoryId }: { categoryId: string }) {
     setLoading(true);
     const result = await deleteCategory(categoryId);
     if (result.success) {
-      toast.success("Category deleted");
+      toast.success(t("categoryDeleted"));
       router.refresh();
     } else {
       toast.error(result.error);
@@ -41,11 +44,11 @@ export function CategoryDeleteButton({ categoryId }: { categoryId: string }) {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Delete category"
-        description="Delete this category? Products must be reassigned first. This action cannot be undone."
+        title={t("deleteCategory")}
+        description={t("deleteCategoryDesc")}
         onConfirm={handleDelete}
         loading={loading}
-        confirmLabel="Delete"
+        confirmLabel={tc("delete")}
       />
     </>
   );

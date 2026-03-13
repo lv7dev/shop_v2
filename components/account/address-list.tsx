@@ -1,6 +1,7 @@
 "use client";
 
 import { MapPin } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { AddressCard } from "./address-card";
 import { AddressFormDialog } from "./address-form-dialog";
 
@@ -21,10 +22,12 @@ type AddressListProps = {
 };
 
 export function AddressList({ addresses }: AddressListProps) {
+  const t = useTranslations("account");
+
   return (
     <div className="rounded-lg border p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Addresses</h2>
+        <h2 className="text-lg font-semibold">{t("addresses")}</h2>
         <AddressFormDialog />
       </div>
 
@@ -32,7 +35,7 @@ export function AddressList({ addresses }: AddressListProps) {
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <MapPin className="mb-3 size-10 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            No saved addresses yet. Add one to speed up checkout.
+            {t("noAddresses")}
           </p>
         </div>
       ) : (

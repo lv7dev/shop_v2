@@ -182,7 +182,7 @@ async function main() {
       name: "Wireless Headphones",
       slug: "wireless-headphones",
       description: "Premium noise-cancelling wireless headphones with 30-hour battery life and superior sound quality.",
-      price: 149.99,
+      price: 3750000,
       // comparePrice: 199.99,
       sku: "WH-001",
       stock: 50,
@@ -201,7 +201,7 @@ async function main() {
       name: "USB-C Charger",
       slug: "usb-c-charger",
       description: "65W fast charging adapter compatible with laptops, tablets, and smartphones.",
-      price: 29.99,
+      price: 750000,
       sku: "UC-001",
       stock: 200,
       images: [
@@ -218,7 +218,7 @@ async function main() {
       name: "Smartphone Case",
       slug: "smartphone-case",
       description: "Slim protective case with shock absorption and anti-scratch coating.",
-      price: 19.99,
+      price: 500000,
       sku: "SC-001",
       stock: 150,
       images: [
@@ -235,7 +235,7 @@ async function main() {
       name: "Bluetooth Speaker",
       slug: "bluetooth-speaker",
       description: "Portable waterproof Bluetooth speaker with 360-degree sound and 12-hour playtime.",
-      price: 79.99,
+      price: 2000000,
       // comparePrice: 99.99,
       sku: "BS-001",
       stock: 75,
@@ -254,7 +254,7 @@ async function main() {
       name: "Laptop Stand",
       slug: "laptop-stand",
       description: "Adjustable aluminum laptop stand for improved ergonomics and cooling.",
-      price: 49.99,
+      price: 1250000,
       sku: "LS-001",
       stock: 120,
       images: [
@@ -271,7 +271,7 @@ async function main() {
       name: "Wireless Mouse",
       slug: "wireless-mouse",
       description: "Ergonomic wireless mouse with silent clicks and long battery life.",
-      price: 34.99,
+      price: 875000,
       sku: "WM-001",
       stock: 180,
       images: [
@@ -288,8 +288,8 @@ async function main() {
       name: "Cotton T-Shirt",
       slug: "cotton-t-shirt",
       description: "Comfortable 100% organic cotton t-shirt with a relaxed fit.",
-      price: 24.99,
-      // comparePrice: 34.99,
+      price: 625000,
+      // comparePrice: 875000,
       sku: "TS-001",
       stock: 0,
       images: [
@@ -307,8 +307,8 @@ async function main() {
       name: "Denim Jeans",
       slug: "denim-jeans",
       description: "Classic slim-fit denim jeans with stretch comfort technology.",
-      price: 59.99,
-      // comparePrice: 79.99,
+      price: 1500000,
+      // comparePrice: 2000000,
       sku: "DJ-001",
       stock: 90,
       images: [
@@ -325,8 +325,8 @@ async function main() {
       name: "Running Shoes",
       slug: "running-shoes",
       description: "Lightweight running shoes with responsive cushioning for long-distance comfort.",
-      price: 89.99,
-      // comparePrice: 119.99,
+      price: 2250000,
+      // comparePrice: 3000000,
       sku: "RS-001",
       stock: 60,
       images: [
@@ -344,7 +344,7 @@ async function main() {
       name: "Yoga Mat",
       slug: "yoga-mat",
       description: "Non-slip premium yoga mat with extra cushioning. 6mm thick for joint support.",
-      price: 29.99,
+      price: 750000,
       sku: "YM-001",
       stock: 100,
       images: [
@@ -361,7 +361,7 @@ async function main() {
       name: "Summer Dress",
       slug: "summer-dress",
       description: "Flowy summer dress with floral print, perfect for warm weather occasions.",
-      price: 44.99,
+      price: 1125000,
       sku: "SD-001",
       stock: 45,
       images: [
@@ -378,7 +378,7 @@ async function main() {
       name: "Leather Wallet",
       slug: "leather-wallet",
       description: "Genuine leather bifold wallet with RFID blocking technology.",
-      price: 39.99,
+      price: 1000000,
       sku: "LW-001",
       stock: 130,
       images: [
@@ -395,8 +395,8 @@ async function main() {
       name: "Coffee Maker",
       slug: "coffee-maker",
       description: "12-cup programmable coffee maker with built-in grinder and thermal carafe.",
-      price: 69.99,
-      // comparePrice: 89.99,
+      price: 1750000,
+      // comparePrice: 2250000,
       sku: "CM-001",
       stock: 40,
       images: [
@@ -413,7 +413,7 @@ async function main() {
       name: "Stainless Steel Water Bottle",
       slug: "stainless-steel-water-bottle",
       description: "Double-wall insulated water bottle that keeps drinks cold 24h or hot 12h.",
-      price: 24.99,
+      price: 625000,
       sku: "WB-001",
       stock: 200,
       images: [
@@ -430,7 +430,7 @@ async function main() {
       name: "Desk Lamp",
       slug: "desk-lamp",
       description: "LED desk lamp with adjustable brightness, color temperature, and USB charging port.",
-      price: 34.99,
+      price: 875000,
       sku: "DL-001",
       stock: 85,
       images: [
@@ -447,8 +447,8 @@ async function main() {
       name: "Backpack",
       slug: "backpack",
       description: "Durable water-resistant backpack with laptop compartment and multiple pockets.",
-      price: 54.99,
-      // comparePrice: 69.99,
+      price: 1375000,
+      // comparePrice: 1750000,
       sku: "BP-001",
       stock: 70,
       images: [
@@ -465,7 +465,7 @@ async function main() {
       name: "Sunglasses",
       slug: "sunglasses",
       description: "Polarized UV400 sunglasses with lightweight frame and scratch-resistant lenses.",
-      price: 29.99,
+      price: 750000,
       sku: "SG-001",
       stock: 110,
       images: [
@@ -482,7 +482,7 @@ async function main() {
       name: "Ceramic Mug Set",
       slug: "ceramic-mug-set",
       description: "Set of 4 handcrafted ceramic mugs in earthy tones. Microwave and dishwasher safe.",
-      price: 19.99,
+      price: 500000,
       sku: "MS-001",
       stock: 95,
       images: [
@@ -499,8 +499,8 @@ async function main() {
       name: "Fitness Tracker",
       slug: "fitness-tracker",
       description: "Advanced fitness tracker with heart rate monitor, GPS, and 7-day battery life.",
-      price: 99.99,
-      // comparePrice: 129.99,
+      price: 2500000,
+      // comparePrice: 3250000,
       sku: "FT-001",
       stock: 55,
       images: [
@@ -517,7 +517,7 @@ async function main() {
       name: "Throw Pillow Set",
       slug: "throw-pillow-set",
       description: "Set of 2 decorative throw pillows with removable, washable covers.",
-      price: 34.99,
+      price: 875000,
       sku: "TP-001",
       stock: 80,
       images: [
@@ -603,18 +603,18 @@ async function main() {
   // Each Size × Color combo = separate variant with own price, stock, SKU
 
   const variantCombos = [
-    { size: sizeS, color: colorBlack, sku: "TS-S-BLK", price: 24.99, stock: 15 },
-    { size: sizeS, color: colorWhite, sku: "TS-S-WHT", price: 24.99, stock: 10 },
-    { size: sizeS, color: colorNavy, sku: "TS-S-NVY", price: 24.99, stock: 8 },
-    { size: sizeM, color: colorBlack, sku: "TS-M-BLK", price: 24.99, stock: 20 },
-    { size: sizeM, color: colorWhite, sku: "TS-M-WHT", price: 24.99, stock: 18 },
-    { size: sizeM, color: colorNavy, sku: "TS-M-NVY", price: 24.99, stock: 12 },
-    { size: sizeL, color: colorBlack, sku: "TS-L-BLK", price: 26.99, stock: 14 },
-    { size: sizeL, color: colorWhite, sku: "TS-L-WHT", price: 26.99, stock: 10 },
-    { size: sizeL, color: colorNavy, sku: "TS-L-NVY", price: 26.99, stock: 6 },
-    { size: sizeXL, color: colorBlack, sku: "TS-XL-BLK", price: 28.99, stock: 8 },
-    { size: sizeXL, color: colorWhite, sku: "TS-XL-WHT", price: 28.99, stock: 5 },
-    { size: sizeXL, color: colorNavy, sku: "TS-XL-NVY", price: 28.99, stock: 3 },
+    { size: sizeS, color: colorBlack, sku: "TS-S-BLK", price: 625000, stock: 15 },
+    { size: sizeS, color: colorWhite, sku: "TS-S-WHT", price: 625000, stock: 10 },
+    { size: sizeS, color: colorNavy, sku: "TS-S-NVY", price: 625000, stock: 8 },
+    { size: sizeM, color: colorBlack, sku: "TS-M-BLK", price: 625000, stock: 20 },
+    { size: sizeM, color: colorWhite, sku: "TS-M-WHT", price: 625000, stock: 18 },
+    { size: sizeM, color: colorNavy, sku: "TS-M-NVY", price: 625000, stock: 12 },
+    { size: sizeL, color: colorBlack, sku: "TS-L-BLK", price: 675000, stock: 14 },
+    { size: sizeL, color: colorWhite, sku: "TS-L-WHT", price: 675000, stock: 10 },
+    { size: sizeL, color: colorNavy, sku: "TS-L-NVY", price: 675000, stock: 6 },
+    { size: sizeXL, color: colorBlack, sku: "TS-XL-BLK", price: 725000, stock: 8 },
+    { size: sizeXL, color: colorWhite, sku: "TS-XL-WHT", price: 725000, stock: 5 },
+    { size: sizeXL, color: colorNavy, sku: "TS-XL-NVY", price: 725000, stock: 3 },
   ];
 
   for (const combo of variantCombos) {

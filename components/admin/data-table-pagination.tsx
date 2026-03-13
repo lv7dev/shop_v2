@@ -1,6 +1,8 @@
 "use client";
 
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/routing";
+import { useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +24,7 @@ export function DataTablePagination({
   page,
   perPage,
 }: DataTablePaginationProps) {
+  const t = useTranslations("admin.common");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -56,12 +59,12 @@ export function DataTablePagination({
   return (
     <div className="flex items-center justify-between px-2 py-4">
       <p className="text-sm text-muted-foreground">
-        {total} {total === 1 ? "result" : "results"}
+        {t("results", { count: total })}
       </p>
 
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows</span>
+          <span className="text-sm text-muted-foreground">{t("rows")}</span>
           <Select value={String(perPage)} onValueChange={changePerPage}>
             <SelectTrigger className="h-8 w-[70px]">
               <SelectValue />

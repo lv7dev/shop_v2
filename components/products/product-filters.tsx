@@ -1,11 +1,12 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
+import { useTranslations } from "next-intl";
 import {
   Search,
   X,
   SlidersHorizontal,
-  DollarSign,
   Tag,
   Layers,
   Palette,
@@ -62,6 +63,7 @@ export function ProductFilters({
   categories,
   facets = [],
 }: ProductFiltersProps) {
+  const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category") ?? "";
@@ -159,13 +161,13 @@ export function ProductFilters({
       {/* Search */}
       <div>
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Search
+          {t("common.search")}
         </h3>
         <form ref={formRef} onSubmit={handleSearch} className="relative">
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
           <Input
             name="search"
-            placeholder="Search products..."
+            placeholder={t("common.searchProducts")}
             defaultValue={search}
             className="pl-9 pr-8"
           />
@@ -184,39 +186,37 @@ export function ProductFilters({
       {/* Price Range */}
       <div>
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Price Range
+          {t("filter.priceRange")}
         </h3>
         <form onSubmit={handlePriceFilter} className="space-y-3">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
-              <DollarSign className="absolute left-2 top-2.5 size-3.5 text-muted-foreground" />
               <Input
                 type="number"
                 min="0"
-                step="0.01"
-                placeholder="Min"
+                step="1"
+                placeholder={t("filter.min")}
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
-                className="pl-7 text-sm"
+                className="text-sm"
               />
             </div>
             <span className="text-muted-foreground">-</span>
             <div className="relative flex-1">
-              <DollarSign className="absolute left-2 top-2.5 size-3.5 text-muted-foreground" />
               <Input
                 type="number"
                 min="0"
-                step="0.01"
-                placeholder="Max"
+                step="1"
+                placeholder={t("filter.max")}
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
-                className="pl-7 text-sm"
+                className="text-sm"
               />
             </div>
           </div>
           <div className="flex gap-2">
             <Button type="submit" size="sm" className="flex-1">
-              Apply
+              {t("filter.applyFilters")}
             </Button>
             {(currentMinPrice || currentMaxPrice) && (
               <Button
@@ -225,7 +225,7 @@ export function ProductFilters({
                 size="sm"
                 onClick={clearPriceFilter}
               >
-                Clear
+                {t("filter.clearFilters")}
               </Button>
             )}
           </div>
@@ -235,7 +235,7 @@ export function ProductFilters({
       {/* Categories */}
       <div>
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Categories
+          {t("filter.category")}
         </h3>
         <ul className="space-y-1">
           <li>
@@ -247,7 +247,7 @@ export function ProductFilters({
                   : "hover:bg-accent"
               }`}
             >
-              All Products
+              {t("filter.allCategories")}
             </button>
           </li>
           {categories.map((cat) => (
@@ -324,7 +324,7 @@ export function ProductFilters({
           className="w-full"
           onClick={clearAllFilters}
         >
-          Clear all filters
+          {t("filter.clearFilters")}
         </Button>
       )}
     </div>
@@ -355,7 +355,7 @@ export function ProductFilters({
             )}
             {(currentMinPrice || currentMaxPrice) && (
               <Badge variant="secondary" className="gap-1 text-xs">
-                ${currentMinPrice || "0"} – ${currentMaxPrice || "∞"}
+                {currentMinPrice || "0"} – {currentMaxPrice || "∞"}
                 <button onClick={clearPriceFilter}>
                   <X className="size-3" />
                 </button>
@@ -385,13 +385,13 @@ export function ProductFilters({
         <div>
           <h3 className="mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             <Search className="size-3.5" />
-            Search
+            {t("common.search")}
           </h3>
           <form onSubmit={handleSearch} className="relative">
             <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input
               name="search"
-              placeholder="Search products..."
+              placeholder={t("common.searchProducts")}
               defaultValue={search}
               className="pl-9 pr-8"
             />
@@ -412,39 +412,36 @@ export function ProductFilters({
         {/* Price Range */}
         <div>
           <h3 className="mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <DollarSign className="size-3.5" />
-            Price Range
+            {t("filter.priceRange")}
           </h3>
           <form onSubmit={handlePriceFilter} className="space-y-3">
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
-                <DollarSign className="absolute left-2 top-2.5 size-3.5 text-muted-foreground" />
                 <Input
                   type="number"
                   min="0"
-                  step="0.01"
-                  placeholder="Min"
+                  step="1"
+                  placeholder={t("filter.min")}
                   value={minPrice}
                   onChange={(e) => setMinPrice(e.target.value)}
-                  className="pl-7 text-sm"
+                  className="text-sm"
                 />
               </div>
-              <span className="text-xs text-muted-foreground">to</span>
+              <span className="text-xs text-muted-foreground">-</span>
               <div className="relative flex-1">
-                <DollarSign className="absolute left-2 top-2.5 size-3.5 text-muted-foreground" />
                 <Input
                   type="number"
                   min="0"
-                  step="0.01"
-                  placeholder="Max"
+                  step="1"
+                  placeholder={t("filter.max")}
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value)}
-                  className="pl-7 text-sm"
+                  className="text-sm"
                 />
               </div>
             </div>
             <Button type="submit" size="sm" className="w-full">
-              Apply Price
+              {t("filter.applyPrice")}
             </Button>
           </form>
         </div>
@@ -455,7 +452,7 @@ export function ProductFilters({
         <div>
           <h3 className="mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             <Layers className="size-3.5" />
-            Categories
+            {t("filter.category")}
           </h3>
           <ul className="space-y-0.5">
             <li>
@@ -467,7 +464,7 @@ export function ProductFilters({
                     : "hover:bg-accent"
                 }`}
               >
-                All Products
+                {t("filter.allCategories")}
               </button>
             </li>
             {categories.map((cat) => (
@@ -554,7 +551,7 @@ export function ProductFilters({
               ) : (
                 <SlidersHorizontal className="size-4" />
               )}
-              Filters
+              {t("filter.filters")}
               {activeFilterCount > 0 && (
                 <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                   {activeFilterCount}
@@ -566,10 +563,10 @@ export function ProductFilters({
             <SheetHeader className="border-b px-4 py-4">
               <SheetTitle className="flex items-center gap-2 text-left">
                 <SlidersHorizontal className="size-4" />
-                Filters
+                {t("filter.filters")}
                 {activeFilterCount > 0 && (
                   <Badge variant="secondary" className="ml-1 text-xs">
-                    {activeFilterCount} active
+                    {t("filter.active", { count: activeFilterCount })}
                   </Badge>
                 )}
               </SheetTitle>
@@ -585,7 +582,7 @@ export function ProductFilters({
                   className="w-full"
                   onClick={clearAllFilters}
                 >
-                  Clear all filters
+                  {t("filter.clearAll")}
                 </Button>
               </SheetFooter>
             )}
@@ -598,7 +595,7 @@ export function ProductFilters({
         {isPending && (
           <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
-            <span>Updating results...</span>
+            <span>{t("filter.updatingResults")}</span>
           </div>
         )}
         {filterContent}

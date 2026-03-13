@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "./product-card";
@@ -43,6 +44,7 @@ export function LoadMoreProducts({
   totalPages,
   filterParams,
 }: Props) {
+  const t = useTranslations();
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(totalPages > 1);
@@ -75,7 +77,7 @@ export function LoadMoreProducts({
             images={product.images}
             stock={product.stock}
             category={product.category}
-            priority={i < 3}
+            priority={i < 2}
             activeDiscount={product.activeDiscount}
           />
         ))}
@@ -83,7 +85,7 @@ export function LoadMoreProducts({
 
       <div className="flex flex-col items-center gap-3 pt-8">
         <p className="text-sm text-muted-foreground">
-          Showing {products.length} of {total} products
+          {t("product.showingOf", { shown: products.length, total })}
         </p>
         {hasMore && (
           <Button
@@ -96,10 +98,10 @@ export function LoadMoreProducts({
             {isPending ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
-                Loading...
+                {t("common.loading")}
               </>
             ) : (
-              "Load More"
+              t("product.loadMore")
             )}
           </Button>
         )}

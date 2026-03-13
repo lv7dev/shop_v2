@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { Search, Loader2, FolderOpen, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,8 @@ type SearchResults = {
 
 export function SearchBar() {
   const router = useRouter();
+  const t = useTranslations("search");
+  const locale = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults | null>(null);
@@ -200,7 +203,7 @@ export function SearchBar() {
         size="icon"
         onClick={open}
         className="md:hidden"
-        aria-label="Open search"
+        aria-label={t("dialogTitle")}
       >
         <Search className="size-5" />
       </Button>
@@ -210,7 +213,7 @@ export function SearchBar() {
         className="hidden items-center gap-2 rounded-full border bg-muted/50 px-4 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted md:flex"
       >
         <Search className="size-4" />
-        <span>Search...</span>
+        <span>{t("searchTrigger")}</span>
         <kbd className="ml-4 rounded border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
           /
         </kbd>
@@ -224,7 +227,7 @@ export function SearchBar() {
           className="gap-0 overflow-hidden p-0 sm:max-w-lg"
         >
           <VisuallyHidden.Root>
-            <DialogTitle>Search</DialogTitle>
+            <DialogTitle>{t("dialogTitle")}</DialogTitle>
           </VisuallyHidden.Root>
 
           {/* Input */}
@@ -236,7 +239,7 @@ export function SearchBar() {
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Search products, categories..."
+              placeholder={t("placeholder")}
               className="flex-1 bg-transparent py-3.5 pl-3 pr-2 text-sm outline-none placeholder:text-muted-foreground"
               autoComplete="off"
               autoFocus
@@ -258,7 +261,7 @@ export function SearchBar() {
                   {results.products.length > 0 && (
                     <div>
                       <p className="px-4 pt-3 pb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Products
+                        {t("products")}
                       </p>
                       {results.products.map((product, i) => (
                         <button
@@ -297,7 +300,7 @@ export function SearchBar() {
                             )}
                           </div>
                           <span className="shrink-0 text-sm font-semibold">
-                            {formatPrice(product.price)}
+                            {formatPrice(product.price, locale)}
                           </span>
                         </button>
                       ))}
@@ -308,7 +311,7 @@ export function SearchBar() {
                   {results.categories.length > 0 && (
                     <div>
                       <p className="px-4 pt-3 pb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Categories
+                        {t("categories")}
                       </p>
                       {results.categories.map((category, i) => {
                         const idx = results.products.length + i;
@@ -331,8 +334,7 @@ export function SearchBar() {
                                 {category.name}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {category.productCount} product
-                                {category.productCount !== 1 ? "s" : ""}
+                                {t("productCount", { count: category.productCount })}
                               </p>
                             </div>
                           </button>
@@ -362,7 +364,7 @@ export function SearchBar() {
                         )}
                       >
                         <Search className="size-4" />
-                        Search for &ldquo;{query.trim()}&rdquo;
+                        {t("searchFor", { query: query.trim() })}
                         <ArrowRight className="ml-auto size-4" />
                       </button>
                     </>
@@ -372,7 +374,7 @@ export function SearchBar() {
                 <div className="px-4 py-8 text-center">
                   <Search className="mx-auto mb-2 size-8 text-muted-foreground/40" />
                   <p className="text-sm text-muted-foreground">
-                    No results found for &ldquo;{query}&rdquo;
+                    {t("noResults", { query })}
                   </p>
                 </div>
               ) : null}
@@ -383,7 +385,7 @@ export function SearchBar() {
           {!showResults && (
             <div className="px-4 py-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Type to search products and categories...
+                {t("typeToSearch")}
               </p>
             </div>
           )}

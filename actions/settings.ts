@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import * as Sentry from "@sentry/nextjs";
 import { deliverySettingsSchema } from "@/lib/validations/delivery";
+import { pricingSettingsSchema } from "@/lib/validations/pricing";
 
 export type PaymentSettings = {
   cod: { enabled: boolean };
@@ -17,6 +18,10 @@ export type DeliverySettings = {
   hqLongitude: number;
   hqAddress: string;
   simulationDurationMinutes: number;
+};
+
+export type PricingSettings = {
+  vndToUsdRate: number;
 };
 
 const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
@@ -32,9 +37,14 @@ const DEFAULT_DELIVERY_SETTINGS: DeliverySettings = {
   simulationDurationMinutes: 2,
 };
 
+const DEFAULT_PRICING_SETTINGS: PricingSettings = {
+  vndToUsdRate: 25000,
+};
+
 type SiteSettingsData = {
   payment?: PaymentSettings;
   delivery?: DeliverySettings;
+  pricing?: PricingSettings;
 };
 
 async function getSiteSettings(): Promise<SiteSettingsData> {
@@ -128,5 +138,37 @@ export async function updateDeliverySettings(delivery: DeliverySettings) {
     Sentry.captureException(error);
     console.error("Update delivery settings error:", error);
     return { success: false, error: "Failed to update delivery settings" };
+  }
+}
+
+// ── Pricing / Exchange Rate Settings ─────────────
+
+export async function getPricingSettings(): Promise<PricingSettings> {
+  const settings = await getSiteSettings();
+  return settings.pricing ?? DEFAULT_PRICING_SETTINGS;
+}
+
+export async function getExchangeRate(): Promise<number> {
+  const pricing = await getPricingSettings();
+  return pricing.vndToUsdRate;
+}
+
+export async function updatePricingSettings(pricing: PricingSettings) {
+  await requireAdmin();
+
+  const parsed = pricingSettingsSchema.safeParse(pricing);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  try {
+    await updateSiteSettings({ pricing: parsed.data });
+    revalidatePath("/dashboard/settings");
+    revalidatePath("/", "layout");
+    return { success: true };
+  } catch (error) {
+    Sentry.captureException(error);
+    console.error("Update pricing settings error:", error);
+    return { success: false, error: "Failed to update pricing settings" };
   }
 }

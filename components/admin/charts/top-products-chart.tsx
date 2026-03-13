@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   Bar,
   BarChart,
@@ -14,10 +15,12 @@ type Props = {
 };
 
 export function TopProductsChart({ data }: Props) {
+  const t = useTranslations("admin.dashboard");
+
   if (data.length === 0) {
     return (
       <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
-        No sales data yet
+        {t("noSalesData")}
       </div>
     );
   }
@@ -47,7 +50,7 @@ export function TopProductsChart({ data }: Props) {
         />
         <Tooltip
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          formatter={((value: any) => [value, "Units Sold"]) as any}
+          formatter={((value: any) => [value, t("unitsSold")]) as any}
           contentStyle={{
             borderRadius: "8px",
             border: "1px solid hsl(var(--border))",

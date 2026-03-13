@@ -44,7 +44,7 @@ export async function GET(
 
   // ── Order info ──────────────────────────────────────
   const displayNumber = order.orderNumber.slice(-8).toUpperCase();
-  const orderDate = new Date(order.createdAt).toLocaleDateString("en-US", {
+  const orderDate = new Date(order.createdAt).toLocaleDateString("vi-VN", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -251,7 +251,7 @@ export async function GET(
   doc.setFontSize(8);
   doc.setTextColor(156, 163, 175);
   doc.text(
-    `Invoice generated on ${new Date().toLocaleDateString("en-US")} | Shop V2`,
+    `Invoice generated on ${new Date().toLocaleDateString("vi-VN")} | Shop V2`,
     pageWidth / 2,
     footerY,
     { align: "center" }

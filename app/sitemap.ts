@@ -1,16 +1,31 @@
 import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 import { getBaseUrl } from "@/lib/seo";
+import { locales } from "@/i18n/config";
+
+function alternates(path: string) {
+  const baseUrl = getBaseUrl();
+  return {
+    languages: Object.fromEntries(
+      locales.map((l) => [l, `${baseUrl}/${l}${path}`])
+    ),
+  };
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getBaseUrl();
 
   // Static pages
-  const staticPages: MetadataRoute.Sitemap = [
-    { url: baseUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
-    { url: `${baseUrl}/products`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
-    { url: `${baseUrl}/categories`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
-  ];
+  const staticPaths = ["", "/products", "/categories"];
+  const staticPages: MetadataRoute.Sitemap = staticPaths.flatMap((path) =>
+    locales.map((locale) => ({
+      url: `${baseUrl}/${locale}${path}`,
+      lastModified: new Date(),
+      changeFrequency: path === "" ? "daily" as const : "weekly" as const,
+      priority: path === "" ? 1 : path === "/products" ? 0.9 : 0.8,
+      alternates: alternates(path),
+    }))
+  );
 
   // Product pages
   const products = await db.product.findMany({
@@ -19,12 +34,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     orderBy: { updatedAt: "desc" },
   });
 
-  const productPages: MetadataRoute.Sitemap = products.map((p) => ({
-    url: `${baseUrl}/products/${p.slug}`,
-    lastModified: p.updatedAt,
-    changeFrequency: "weekly",
-    priority: 0.7,
-  }));
+  const productPages: MetadataRoute.Sitemap = products.flatMap((p) =>
+    locales.map((locale) => ({
+      url: `${baseUrl}/${locale}/products/${p.slug}`,
+      lastModified: p.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+      alternates: alternates(`/products/${p.slug}`),
+    }))
+  );
 
   // Category pages
   const categories = await db.category.findMany({
@@ -32,12 +50,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     orderBy: { updatedAt: "desc" },
   });
 
-  const categoryPages: MetadataRoute.Sitemap = categories.map((c) => ({
-    url: `${baseUrl}/categories/${c.slug}`,
-    lastModified: c.updatedAt,
-    changeFrequency: "weekly",
-    priority: 0.6,
-  }));
+  const categoryPages: MetadataRoute.Sitemap = categories.flatMap((c) =>
+    locales.map((locale) => ({
+      url: `${baseUrl}/${locale}/categories/${c.slug}`,
+      lastModified: c.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+      alternates: alternates(`/categories/${c.slug}`),
+    }))
+  );
 
   return [...staticPages, ...productPages, ...categoryPages];
 }

@@ -100,6 +100,7 @@ export async function checkLowStock(items: StockItem[]) {
         data: {
           productId: alert.productId,
           variantId: alert.variantId ?? null,
+          productName: alert.name,
           stock: alert.stock,
           threshold: alert.threshold,
           image: alert.image ?? null,

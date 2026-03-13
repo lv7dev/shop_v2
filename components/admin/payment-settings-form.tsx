@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   Banknote,
@@ -27,47 +28,49 @@ type PaymentSettingsFormProps = {
   };
 };
 
-const PAYMENT_METHODS = [
-  {
-    key: "cod" as const,
-    label: "Cash on Delivery (COD)",
-    description: "Customers pay when they receive their order",
-    icon: Banknote,
-    iconColor: "text-green-600",
-    requiresEnv: false,
-  },
-  {
-    key: "stripe" as const,
-    label: "Stripe (Credit/Debit Card)",
-    description: "Accept card payments via Stripe Checkout",
-    icon: CreditCard,
-    iconColor: "text-blue-600",
-    requiresEnv: true,
-    envVars: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
-  },
-  {
-    key: "momo" as const,
-    label: "MoMo (Vietnam)",
-    description: "QR Pay and ATM/Card payments via MoMo",
-    icon: Smartphone,
-    iconColor: "text-pink-600",
-    requiresEnv: true,
-    envVars: ["MOMO_PARTNER_CODE", "MOMO_ACCESS_KEY", "MOMO_SECRET_KEY"],
-  },
-];
-
 export function PaymentSettingsForm({
   initialSettings,
   envStatus,
 }: PaymentSettingsFormProps) {
+  const t = useTranslations("admin.paymentSettings");
+  const tc = useTranslations("admin.common");
   const [settings, setSettings] = useState<PaymentSettings>(initialSettings);
   const [saving, setSaving] = useState(false);
+
+  const PAYMENT_METHODS = [
+    {
+      key: "cod" as const,
+      label: t("cod"),
+      description: t("codDesc"),
+      icon: Banknote,
+      iconColor: "text-green-600",
+      requiresEnv: false,
+    },
+    {
+      key: "stripe" as const,
+      label: t("stripe"),
+      description: t("stripeDesc"),
+      icon: CreditCard,
+      iconColor: "text-blue-600",
+      requiresEnv: true,
+      envVars: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
+    },
+    {
+      key: "momo" as const,
+      label: t("momo"),
+      description: t("momoDesc"),
+      icon: Smartphone,
+      iconColor: "text-pink-600",
+      requiresEnv: true,
+      envVars: ["MOMO_PARTNER_CODE", "MOMO_ACCESS_KEY", "MOMO_SECRET_KEY"],
+    },
+  ];
 
   async function handleSave() {
     setSaving(true);
     const result = await updatePaymentSettings(settings);
     if (result.success) {
-      toast.success("Payment settings updated");
+      toast.success(t("updated"));
     } else {
       toast.error(result.error);
     }
@@ -93,9 +96,9 @@ export function PaymentSettingsForm({
     <div className="space-y-6">
       <div className="rounded-lg border">
         <div className="border-b px-6 py-4">
-          <h2 className="text-lg font-semibold">Payment Methods</h2>
+          <h2 className="text-lg font-semibold">{t("title")}</h2>
           <p className="text-sm text-muted-foreground">
-            Enable or disable payment methods for your store checkout.
+            {t("description")}
           </p>
         </div>
 
@@ -114,17 +117,17 @@ export function PaymentSettingsForm({
                     <span className="font-medium">{method.label}</span>
                     {enabled && envOk && (
                       <Badge className="border-0 bg-green-100 text-green-700 text-xs">
-                        Active
+                        {tc("active")}
                       </Badge>
                     )}
                     {enabled && !envOk && (
                       <Badge className="border-0 bg-amber-100 text-amber-700 text-xs">
-                        Enabled but not configured
+                        {tc("enabledNotConfigured")}
                       </Badge>
                     )}
                     {!enabled && (
                       <Badge className="border-0 bg-gray-100 text-gray-500 text-xs">
-                        Disabled
+                        {tc("disabled")}
                       </Badge>
                     )}
                   </div>
@@ -139,15 +142,14 @@ export function PaymentSettingsForm({
                         <>
                           <Check className="size-3 text-green-600" />
                           <span className="text-green-600">
-                            API keys configured
+                            {t("apiConfigured")}
                           </span>
                         </>
                       ) : (
                         <>
                           <AlertTriangle className="size-3 text-amber-500" />
                           <span className="text-amber-600">
-                            Missing env vars:{" "}
-                            {method.envVars?.join(", ")}
+                            {t("missingEnv", { vars: method.envVars?.join(", ") ?? "" })}
                           </span>
                         </>
                       )}
@@ -167,20 +169,11 @@ export function PaymentSettingsForm({
 
       {/* Info box */}
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-        <p className="font-medium">How it works</p>
+        <p className="font-medium">{t("howItWorks")}</p>
         <ul className="mt-1 list-inside list-disc space-y-1 text-blue-700">
-          <li>
-            A payment method appears in checkout only if it is{" "}
-            <strong>enabled here</strong> AND its <strong>API keys are set</strong>{" "}
-            in environment variables.
-          </li>
-          <li>
-            COD does not require any API keys.
-          </li>
-          <li>
-            You can enable a method now and add the API keys later — it
-            won&apos;t show in checkout until both conditions are met.
-          </li>
+          <li>{t("howItWorksInfo1")}</li>
+          <li>{t("howItWorksInfo2")}</li>
+          <li>{t("howItWorksInfo3")}</li>
         </ul>
       </div>
 
@@ -191,10 +184,10 @@ export function PaymentSettingsForm({
           {saving ? (
             <>
               <Loader2 className="mr-2 size-4 animate-spin" />
-              Saving...
+              {tc("saving")}
             </>
           ) : (
-            "Save Changes"
+            tc("saveChanges")
           )}
         </Button>
       </div>

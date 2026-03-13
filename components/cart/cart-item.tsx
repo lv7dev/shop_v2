@@ -1,12 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
+import { useLocale, useTranslations } from "next-intl";
 import { Minus, Plus, Trash2, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore, type CartItem as CartItemType } from "@/store/cart-store";
+import { formatPrice } from "@/lib/utils";
 
 export function CartItem({ item }: { item: CartItemType }) {
+  const t = useTranslations();
+  const locale = useLocale();
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
 
@@ -42,7 +46,7 @@ export function CartItem({ item }: { item: CartItemType }) {
             </p>
           )}
           <p className="text-sm text-muted-foreground">
-            ${item.price.toFixed(2)} each
+            {formatPrice(item.price, locale)} {t("common.each")}
           </p>
         </div>
 
@@ -77,7 +81,7 @@ export function CartItem({ item }: { item: CartItemType }) {
 
           <div className="flex items-center gap-3">
             <span className="font-semibold">
-              ${(item.price * item.quantity).toFixed(2)}
+              {formatPrice(item.price * item.quantity, locale)}
             </span>
             <Button
               variant="ghost"

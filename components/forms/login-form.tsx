@@ -3,8 +3,10 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { Link } from "@/i18n/routing";
+import { useRouter } from "@/i18n/routing";
+import { useTranslations } from "next-intl";
 import { loginWithCart } from "@/actions/auth";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
@@ -17,6 +19,7 @@ const CartMergeModal = dynamic(
 );
 
 export function LoginForm() {
+  const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "";
@@ -160,10 +163,10 @@ export function LoginForm() {
             />
           </div>
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-white">
-            Welcome Back
+            {t("auth.welcomeBack")}
           </h1>
           <p className="mt-2 text-sm text-white/70">
-            Sign in to your account to continue
+            {t("auth.signInDescription")}
           </p>
         </div>
 
@@ -180,7 +183,7 @@ export function LoginForm() {
           {/* Email */}
           <div>
             <label className="mb-2 block text-sm font-medium text-white/80">
-              Email Address
+              {t("auth.emailAddress")}
             </label>
             <div className="relative">
               <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2">
@@ -194,7 +197,7 @@ export function LoginForm() {
               <input
                 type="email"
                 name="email"
-                placeholder="Enter your email"
+                placeholder={t("auth.enterEmail")}
                 required
                 className="w-full rounded-2xl border border-white/20 bg-white/10 py-4 pl-12 pr-4 text-base text-white placeholder-white/50 outline-none transition focus:border-white/40 focus:bg-white/15"
               />
@@ -204,7 +207,7 @@ export function LoginForm() {
           {/* Password */}
           <div>
             <label className="mb-2 block text-sm font-medium text-white/80">
-              Password
+              {t("auth.password")}
             </label>
             <div className="relative">
               <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2">
@@ -218,7 +221,7 @@ export function LoginForm() {
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
-                placeholder="Enter your password"
+                placeholder={t("auth.enterPassword")}
                 required
                 className="w-full rounded-2xl border border-white/20 bg-white/10 py-4 pl-12 pr-12 text-base text-white placeholder-white/50 outline-none transition focus:border-white/40 focus:bg-white/15"
               />
@@ -243,7 +246,7 @@ export function LoginForm() {
               href="/forgot-password"
               className="text-sm font-medium text-purple-300 hover:text-purple-200"
             >
-              Forgot password?
+              {t("auth.forgotPassword")}
             </Link>
           </div>
 
@@ -264,7 +267,7 @@ export function LoginForm() {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
             )}
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? t("auth.signingIn") : t("common.signIn")}
           </button>
           </fieldset>
         </form>
@@ -272,12 +275,13 @@ export function LoginForm() {
         {/* Divider */}
         <div className="relative mt-8 flex items-center">
           <div className="flex-1 border-t border-white/20" />
-          <span className="px-4 text-sm text-white/60">Or continue with</span>
+          <span className="px-4 text-sm text-white/60">{t("auth.orContinueWith")}</span>
           <div className="flex-1 border-t border-white/20" />
         </div>
 
-        {/* Social Buttons */}
+        {/* Social Buttons — API routes require <a>, not <Link> */}
         <div className="mt-6 flex gap-4">
+          {/* eslint-disable @next/next/no-html-link-for-pages */}
           <a
             href="/api/auth/google"
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 py-3 text-sm font-medium text-white transition hover:bg-white/20"
@@ -292,16 +296,17 @@ export function LoginForm() {
             <Image src="/icons/facebook-icon.svg" alt="" width={16} height={16} />
             Facebook
           </a>
+          {/* eslint-enable @next/next/no-html-link-for-pages */}
         </div>
 
         {/* Sign up link */}
         <div className="mt-8 text-center">
-          <p className="text-sm text-white/60">{`Don't have an account?`}</p>
+          <p className="text-sm text-white/60">{t("auth.noAccount")}</p>
           <Link
             href="/register"
             className="mt-1 inline-block text-base font-medium text-purple-300 hover:text-purple-200"
           >
-            Sign up
+            {t("common.signUp")}
           </Link>
         </div>
 
@@ -311,7 +316,7 @@ export function LoginForm() {
             href="/"
             className="text-sm text-white/60 transition hover:text-white/80"
           >
-            &larr; Back to Store
+            &larr; {t("common.backToStore")}
           </Link>
         </div>
       </div>

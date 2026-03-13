@@ -1,0 +1,372 @@
+import type { Metadata } from "next";
+import Image from "next/image";
+import { Link } from "@/i18n/routing";
+import { notFound, redirect } from "next/navigation";
+import {
+  CheckCircle,
+  ArrowLeft,
+  Package,
+  ShoppingCart,
+  AlertCircle,
+  XCircle,
+  Truck,
+  MapPin,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { getSession } from "@/lib/auth";
+import { getOrderById } from "@/services/orders";
+import { formatPrice } from "@/lib/utils";
+import { PaymentStatusPoller } from "@/components/orders/payment-status-poller";
+import { RetryPaymentButton } from "@/components/orders/retry-payment-button";
+import { DownloadInvoiceButton } from "@/components/orders/download-invoice-button";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+
+export const metadata: Metadata = {
+  title: "Order Detail",
+  description: "View your order details, items, and shipping information.",
+  robots: { index: false, follow: false },
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  PENDING: "bg-yellow-100 text-yellow-800",
+  CONFIRMED: "bg-blue-100 text-blue-800",
+  PROCESSING: "bg-indigo-100 text-indigo-800",
+  SHIPPED: "bg-purple-100 text-purple-800",
+  DELIVERED: "bg-green-100 text-green-800",
+  CANCELLED: "bg-red-100 text-red-800",
+  REFUNDED: "bg-gray-100 text-gray-800",
+};
+
+const PAYMENT_STATUS_COLORS: Record<string, string> = {
+  PENDING: "bg-yellow-100 text-yellow-800",
+  PAID: "bg-green-100 text-green-800",
+  FAILED: "bg-red-100 text-red-800",
+  REFUNDED: "bg-gray-100 text-gray-800",
+  EXPIRED: "bg-orange-100 text-orange-800",
+};
+
+export default async function OrderDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string; locale: string }>;
+  searchParams: Promise<{ new?: string; payment?: string }>;
+}) {
+  const { id, locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations();
+
+  const session = await getSession();
+  if (!session) redirect("/login");
+
+  const { new: isNew, payment } = await searchParams;
+  const order = await getOrderById(id, session.userId);
+
+  if (!order) {
+    notFound();
+  }
+
+  const showSuccessBanner =
+    (isNew && order.paymentMethod === "COD") ||
+    (payment === "success" && order.paymentStatus === "PAID");
+
+  const showPaymentPendingBanner =
+    payment === "momo" &&
+    order.paymentStatus === "PENDING" &&
+    order.paymentMethod === "MOMO";
+
+  const showPaymentCancelledBanner =
+    payment === "cancelled" && order.paymentStatus === "PENDING";
+
+  const showPaymentFailedBanner =
+    order.paymentStatus === "FAILED" || order.paymentStatus === "EXPIRED";
+
+  const showPaymentPaidBanner =
+    isNew && order.paymentStatus === "PAID" && order.paymentMethod !== "COD";
+
+  const formattedDate = new Date(order.createdAt).toLocaleDateString(locale, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      {/* Success banner for COD or confirmed payment */}
+      {(showSuccessBanner || showPaymentPaidBanner) && (
+        <div className="mb-8 flex flex-col items-center rounded-lg border border-green-200 bg-green-50 p-6 text-center">
+          <CheckCircle className="mb-3 size-12 text-green-600" />
+          <h2 className="mb-1 text-xl font-semibold text-green-800">
+            {order.paymentStatus === "PAID"
+              ? t("orders.paymentConfirmed")
+              : t("orders.orderPlacedSuccess")}
+          </h2>
+          <p className="text-sm text-green-700">
+            {t("orders.thankYou")}
+          </p>
+        </div>
+      )}
+
+      {/* Polling banner for MoMo redirect return */}
+      {showPaymentPendingBanner && <PaymentStatusPoller orderId={order.id} />}
+
+      {/* Payment cancelled banner */}
+      {showPaymentCancelledBanner && (
+        <div className="mb-8 flex flex-col items-center rounded-lg border border-amber-200 bg-amber-50 p-6 text-center">
+          <AlertCircle className="mb-3 size-12 text-amber-600" />
+          <h2 className="mb-1 text-xl font-semibold text-amber-800">
+            {t("orders.paymentNotCompleted")}
+          </h2>
+          <p className="mb-4 text-sm text-amber-700">
+            {t("orders.paymentNotCompletedDesc")}
+          </p>
+          <RetryPaymentButton
+            orderId={order.id}
+            paymentMethod={order.paymentMethod}
+          />
+        </div>
+      )}
+
+      {/* Payment failed/expired banner */}
+      {showPaymentFailedBanner && (
+        <div className="mb-8 flex flex-col items-center rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+          <XCircle className="mb-3 size-12 text-red-600" />
+          <h2 className="mb-1 text-xl font-semibold text-red-800">
+            {order.paymentStatus === "EXPIRED"
+              ? t("orders.paymentExpired")
+              : t("orders.paymentFailed")}
+          </h2>
+          <p className="text-sm text-red-700">
+            {order.paymentStatus === "EXPIRED"
+              ? t("orders.paymentExpiredDesc")
+              : t("orders.paymentFailedDesc")}
+          </p>
+        </div>
+      )}
+
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
+            <Link href="/orders">
+              <ArrowLeft className="mr-1 size-4" />
+              {t("orders.backToOrders")}
+            </Link>
+          </Button>
+          <h1 className="text-2xl font-bold">
+            {t("orders.order")} #{order.orderNumber.slice(-8).toUpperCase()}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {t("orders.placedOn", { date: formattedDate })}
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <Badge
+            className={`${STATUS_COLORS[order.status] ?? ""} border-0 text-xs`}
+            variant="outline"
+          >
+            {t(`status.${order.status}`)}
+          </Badge>
+          {order.paymentMethod !== "COD" && (
+            <Badge
+              className={`${PAYMENT_STATUS_COLORS[order.paymentStatus] ?? ""} border-0 text-xs`}
+              variant="outline"
+            >
+              {t(`payment.status.${order.paymentStatus}`)}
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {/* Track Delivery banner */}
+      {order.status === "SHIPPED" && (
+        <div className="mb-6 flex items-center gap-3 rounded-lg border border-purple-200 bg-purple-50 p-4">
+          <Truck className="size-6 shrink-0 text-purple-600" />
+          <div className="flex-1">
+            <p className="font-medium text-purple-800">
+              {t("orders.orderOnItsWay")}
+            </p>
+            <p className="text-sm text-purple-700">
+              {t("orders.trackDeliveryDesc")}
+            </p>
+          </div>
+          <Button asChild>
+            <Link href={`/orders/${order.id}/tracking`}>
+              <MapPin className="mr-2 size-4" />
+              {t("orders.trackDelivery")}
+            </Link>
+          </Button>
+        </div>
+      )}
+      {order.status === "DELIVERED" && (
+        <div className="mb-6 flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4">
+          <Truck className="size-6 shrink-0 text-green-600" />
+          <div className="flex-1">
+            <p className="font-medium text-green-800">
+              {t("orders.orderDelivered")}
+            </p>
+            <p className="text-sm text-green-700">
+              {t("orders.viewRouteDesc")}
+            </p>
+          </div>
+          <Button variant="outline" asChild>
+            <Link href={`/orders/${order.id}/tracking`}>
+              <MapPin className="mr-2 size-4" />
+              {t("orders.viewRoute")}
+            </Link>
+          </Button>
+        </div>
+      )}
+
+      {/* Payment info */}
+      {order.paymentMethod !== "COD" && (
+        <div className="mb-6 rounded-lg border p-4 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">{t("orders.paymentMethodLabel")}</span>
+            <span className="font-medium">
+              {t(`payment.${order.paymentMethod}`)}
+            </span>
+          </div>
+          {order.paymentId && (
+            <div className="mt-1 flex items-center justify-between">
+              <span className="text-muted-foreground">{t("orders.transactionId")}</span>
+              <span className="font-mono text-xs">{order.paymentId}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Order items */}
+      <div className="mb-6 rounded-lg border">
+        <div className="border-b px-6 py-4">
+          <h2 className="font-semibold flex items-center gap-2">
+            <Package className="size-4" />
+            {t("orders.itemsCount", { count: order.items.length })}
+          </h2>
+        </div>
+        <div className="divide-y">
+          {order.items.map((item) => (
+            <div key={item.id} className="flex gap-4 px-6 py-4">
+              <div className="relative size-16 shrink-0 overflow-hidden rounded bg-muted">
+                {item.product.images?.[0] ? (
+                  <Image
+                    src={item.product.images[0]}
+                    alt={item.product.name}
+                    fill
+                    sizes="64px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-muted-foreground">
+                    <ShoppingCart className="size-6" />
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-1 items-center justify-between">
+                <div>
+                  <Link
+                    href={`/products/${item.product.slug}`}
+                    className="font-medium hover:text-primary transition-colors"
+                  >
+                    {item.product.name}
+                  </Link>
+                  <p className="text-sm text-muted-foreground">
+                    {t("orders.qty", { qty: item.quantity })} x{" "}
+                    {formatPrice(Number(item.price), order.currency)}
+                  </p>
+                </div>
+                <span className="font-medium">
+                  {formatPrice(
+                    Number(item.price) * item.quantity,
+                    order.currency
+                  )}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Order totals */}
+      <div className="rounded-lg border p-6">
+        <h2 className="mb-4 font-semibold">{t("orders.orderSummary")}</h2>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">{t("orders.subtotal")}</span>
+            <span>
+              {formatPrice(Number(order.subtotal), order.currency)}
+            </span>
+          </div>
+          {Number(order.discountAmount) > 0 && (
+            <div className="flex justify-between text-green-600">
+              <span>
+                {t("orders.discount")}
+                {order.discountCode ? ` (${order.discountCode})` : ""}
+              </span>
+              <span>
+                -{formatPrice(Number(order.discountAmount), order.currency)}
+              </span>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">{t("orders.shipping")}</span>
+            <span>
+              {Number(order.shippingCost) === 0 ? (
+                <span className="text-green-600">{t("orders.shippingFree")}</span>
+              ) : (
+                formatPrice(Number(order.shippingCost), order.currency)
+              )}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">{t("orders.tax")}</span>
+            <span>{formatPrice(Number(order.tax), order.currency)}</span>
+          </div>
+          <Separator />
+          <div className="flex justify-between text-base font-semibold">
+            <span>{t("orders.total")}</span>
+            <span>{formatPrice(Number(order.total), order.currency)}</span>
+          </div>
+        </div>
+
+        {order.note && (
+          <>
+            <Separator className="my-4" />
+            <div>
+              <p className="mb-1 text-sm font-medium">{t("orders.orderNotes")}</p>
+              <p className="text-sm text-muted-foreground">{order.note}</p>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Shipping address */}
+      {order.address && (
+        <div className="mt-6 rounded-lg border p-6">
+          <h2 className="mb-2 font-semibold">{t("orders.shippingAddress")}</h2>
+          <div className="text-sm text-muted-foreground">
+            <p>{order.address.name}</p>
+            <p>{order.address.street}</p>
+            <p>
+              {order.address.city}, {order.address.state}{" "}
+              {order.address.zipCode}
+            </p>
+            <p>{order.address.country}</p>
+            {order.address.phone && <p>{order.address.phone}</p>}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Button variant="outline" asChild>
+          <Link href="/orders">{t("orders.viewAllOrders")}</Link>
+        </Button>
+        <Button asChild>
+          <Link href="/products">{t("orders.continueShopping")}</Link>
+        </Button>
+        <DownloadInvoiceButton orderId={order.id} />
+      </div>
+    </div>
+  );
+}

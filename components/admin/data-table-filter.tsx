@@ -1,6 +1,8 @@
 "use client";
 
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/routing";
+import { useSearchParams, usePathname } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -23,8 +25,9 @@ type DataTableFilterProps = {
 export function DataTableFilter({
   paramKey,
   options,
-  placeholder = "All",
+  placeholder,
 }: DataTableFilterProps) {
+  const t = useTranslations("admin.common");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -44,10 +47,10 @@ export function DataTableFilter({
   return (
     <Select value={currentValue} onValueChange={handleChange}>
       <SelectTrigger className="w-[150px]">
-        <SelectValue placeholder={placeholder} />
+        <SelectValue placeholder={placeholder ?? t("all")} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">All</SelectItem>
+        <SelectItem value="all">{t("all")}</SelectItem>
         {options.map((opt) => (
           <SelectItem key={opt.value} value={opt.value}>
             {opt.label}

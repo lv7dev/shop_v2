@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/routing";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,8 @@ import { deleteFacet } from "@/actions/facet";
 
 export function FacetDeleteButton({ facetId }: { facetId: string }) {
   const router = useRouter();
+  const t = useTranslations("admin.confirm");
+  const tc = useTranslations("admin.common");
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -17,7 +20,7 @@ export function FacetDeleteButton({ facetId }: { facetId: string }) {
     setLoading(true);
     const result = await deleteFacet(facetId);
     if (result.success) {
-      toast.success("Facet deleted");
+      toast.success(t("facetDeleted"));
       router.refresh();
     } else {
       toast.error(result.error);
@@ -41,11 +44,11 @@ export function FacetDeleteButton({ facetId }: { facetId: string }) {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Delete facet"
-        description="Delete this facet and all its values? This action cannot be undone."
+        title={t("deleteFacet")}
+        description={t("deleteFacetDesc")}
         onConfirm={handleDelete}
         loading={loading}
-        confirmLabel="Delete"
+        confirmLabel={tc("delete")}
       />
     </>
   );

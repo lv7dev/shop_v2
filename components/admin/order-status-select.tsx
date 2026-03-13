@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/routing";
 import { toast } from "sonner";
 import {
   Select,
@@ -11,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { updateOrderStatus } from "@/actions/order";
-import { ORDER_STATUS_LABELS } from "@/lib/constants";
 
 const STATUSES = [
   "PENDING",
@@ -31,6 +31,8 @@ export function OrderStatusSelect({
   currentStatus: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("admin.confirm");
+  const statusT = useTranslations("status");
   const [loading, setLoading] = useState(false);
 
   async function handleChange(newStatus: string) {
@@ -41,7 +43,7 @@ export function OrderStatusSelect({
       newStatus as (typeof STATUSES)[number]
     );
     if (result.success) {
-      toast.success(`Order updated to ${ORDER_STATUS_LABELS[newStatus]}`);
+      toast.success(t("orderUpdated", { status: statusT(newStatus) }));
       router.refresh();
     } else {
       toast.error(result.error);
@@ -61,7 +63,7 @@ export function OrderStatusSelect({
       <SelectContent>
         {STATUSES.map((status) => (
           <SelectItem key={status} value={status} className="text-xs">
-            {ORDER_STATUS_LABELS[status] ?? status}
+            {statusT(status)}
           </SelectItem>
         ))}
       </SelectContent>

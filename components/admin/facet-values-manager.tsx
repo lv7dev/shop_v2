@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/routing";
 import { toast } from "sonner";
 import { Plus, Trash2, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,8 @@ type FacetValuesManagerProps = {
 
 export function FacetValuesManager({ facetId, values }: FacetValuesManagerProps) {
   const router = useRouter();
+  const t = useTranslations("admin.confirm");
+  const tc = useTranslations("admin.common");
   const [adding, setAdding] = useState(false);
   const [newValue, setNewValue] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -46,13 +49,10 @@ export function FacetValuesManager({ facetId, values }: FacetValuesManagerProps)
 
     const result = await createFacetValuesBatch(facetId, parts);
     if (result.success) {
-      const msg =
-        result.created === 1
-          ? "1 value added"
-          : `${result.created} values added`;
+      const msg = t("valueAdded", { count: result.created });
       const skipMsg =
         result.skipped.length > 0
-          ? ` (skipped: ${result.skipped.join(", ")})`
+          ? ` (${t("skipped", { items: result.skipped.join(", ") })})`
           : "";
       toast.success(msg + skipMsg);
       setNewValue("");
@@ -69,7 +69,7 @@ export function FacetValuesManager({ facetId, values }: FacetValuesManagerProps)
     setLoading(true);
     const result = await updateFacetValue(id, { value: editValue.trim() });
     if (result.success) {
-      toast.success("Value updated");
+      toast.success(t("valueUpdated"));
       setEditingId(null);
       router.refresh();
     } else {
@@ -90,7 +90,7 @@ export function FacetValuesManager({ facetId, values }: FacetValuesManagerProps)
     setLoading(true);
     const result = await deleteFacetValue(id);
     if (result.success) {
-      toast.success("Value deleted");
+      toast.success(t("valueDeleted"));
       router.refresh();
     } else {
       toast.error(result.error);
@@ -109,15 +109,15 @@ export function FacetValuesManager({ facetId, values }: FacetValuesManagerProps)
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-        title="Delete facet value"
+        title={t("deleteFacetValue")}
         description={
           deleteTarget
-            ? `This value is used by ${deleteTarget.productCount} product(s). Removing it will unlink those products. Continue?`
+            ? t("deleteFacetValueDesc", { count: deleteTarget.productCount })
             : ""
         }
         onConfirm={() => deleteTarget && doDelete(deleteTarget.id)}
         loading={loading}
-        confirmLabel="Delete"
+        confirmLabel={tc("delete")}
       />
       <div className="flex flex-wrap gap-2">
         {values.map((val) =>
@@ -223,7 +223,7 @@ export function FacetValuesManager({ facetId, values }: FacetValuesManagerProps)
             onClick={() => setAdding(true)}
           >
             <Plus className="size-3" />
-            Add
+            {tc("add")}
           </Button>
         )}
       </div>

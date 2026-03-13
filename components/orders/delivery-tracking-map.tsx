@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Truck,
   ArrowLeft,
@@ -31,7 +32,7 @@ const DeliveryTrackingMapInner = dynamic(
       <div className="flex h-[450px] w-full items-center justify-center rounded-lg border bg-muted md:h-[500px]">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="size-8 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Loading map...</p>
+          <p className="text-sm text-muted-foreground">...</p>
         </div>
       </div>
     ),
@@ -67,6 +68,7 @@ export function DeliveryTrackingMap({
   orderNumber,
   alreadyDelivered = false,
 }: DeliveryTrackingMapProps) {
+  const t = useTranslations("tracking");
   const [routeData, setRouteData] = useState<RouteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,15 +110,13 @@ export function DeliveryTrackingMap({
         }
       } catch (err) {
         console.error("Route fetch error:", err);
-        setError(
-          "Could not load the delivery route. The routing service may be temporarily unavailable."
-        );
+        setError(t("routeError"));
         setLoading(false);
       }
     }
 
     fetchRoute();
-  }, [hqLat, hqLng, destLat, destLng, alreadyDelivered]);
+  }, [hqLat, hqLng, destLat, destLng, alreadyDelivered, t]);
 
   const handleProgress = useCallback(
     (p: number, dist: number) => {
@@ -134,11 +134,11 @@ export function DeliveryTrackingMap({
 
     const result = await markOrderDelivered(orderId);
     if (result.success) {
-      toast.success("Order has been delivered!", {
-        description: `Order #${orderNumber.slice(-8).toUpperCase()} arrived at the destination.`,
+      toast.success(t("deliveredToast"), {
+        description: t("deliveredToastDesc", { orderNumber: orderNumber.slice(-8).toUpperCase() }),
       });
     }
-  }, [orderId, orderNumber]);
+  }, [orderId, orderNumber, t]);
 
   const simulationDurationMs = simulationDurationMinutes * 60 * 1000;
   const etaMinutes = Math.max(
@@ -147,12 +147,12 @@ export function DeliveryTrackingMap({
   );
 
   function getStatusText() {
-    if (isDelivered) return "Delivered!";
-    if (!hasStartedRef.current) return "Preparing...";
-    if (!isRunning) return "Paused";
-    if (progress > 0.9) return "Almost there!";
-    if (progress > 0.5) return "On the way";
-    return "En route";
+    if (isDelivered) return t("statusDelivered");
+    if (!hasStartedRef.current) return t("statusPreparing");
+    if (!isRunning) return t("statusPaused");
+    if (progress > 0.9) return t("statusAlmostThere");
+    if (progress > 0.5) return t("statusOnTheWay");
+    return t("statusEnRoute");
   }
 
   function getStatusColor() {
@@ -169,15 +169,15 @@ export function DeliveryTrackingMap({
           <Button variant="ghost" size="sm" asChild className="-ml-2 mb-2">
             <Link href={`/orders/${orderId}`}>
               <ArrowLeft className="mr-1 size-4" />
-              Back to Order
+              {t("backToOrder")}
             </Link>
           </Button>
           <h1 className="flex items-center gap-2 text-2xl font-bold">
             <Truck className="size-6" />
-            Delivery Tracking
+            {t("title")}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Order #{orderNumber.slice(-8).toUpperCase()}
+            {t("orderNumber", { orderNumber: orderNumber.slice(-8).toUpperCase() })}
           </p>
         </div>
         <Badge className={`${getStatusColor()} border-0 text-sm`}>
@@ -191,7 +191,7 @@ export function DeliveryTrackingMap({
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="size-8 animate-spin text-purple-600" />
             <p className="text-sm text-muted-foreground">
-              Calculating delivery route...
+              {t("calculatingRoute")}
             </p>
           </div>
         </div>
@@ -202,7 +202,7 @@ export function DeliveryTrackingMap({
             {error}
           </p>
           <Button variant="outline" onClick={() => window.location.reload()}>
-            Try Again
+            {t("tryAgain")}
           </Button>
         </div>
       ) : routeData ? (
@@ -226,7 +226,7 @@ export function DeliveryTrackingMap({
           {/* Progress Bar */}
           <div className="mb-4">
             <div className="mb-1 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Delivery Progress</span>
+              <span className="text-muted-foreground">{t("deliveryProgress")}</span>
               <span className="font-medium">
                 {Math.round(progress * 100)}%
               </span>
@@ -252,7 +252,7 @@ export function DeliveryTrackingMap({
                   ? `${Math.round(distanceRemaining * 1000)}m`
                   : `${distanceRemaining.toFixed(1)}km`}
               </p>
-              <p className="text-xs text-muted-foreground">Remaining</p>
+              <p className="text-xs text-muted-foreground">{t("remaining")}</p>
             </div>
             <div className="rounded-lg bg-muted/50 p-3">
               <Clock className="mx-auto mb-1 size-5 text-muted-foreground" />
@@ -265,14 +265,14 @@ export function DeliveryTrackingMap({
                         Math.round((etaMinutes % 1) * 60)
                       ).padStart(2, "0")}`}
               </p>
-              <p className="text-xs text-muted-foreground">ETA</p>
+              <p className="text-xs text-muted-foreground">{t("eta")}</p>
             </div>
             <div className="rounded-lg bg-muted/50 p-3">
               <MapPin className="mx-auto mb-1 size-5 text-muted-foreground" />
               <p className="text-lg font-semibold">
                 {routeData.distanceKm.toFixed(1)}km
               </p>
-              <p className="text-xs text-muted-foreground">Total Distance</p>
+              <p className="text-xs text-muted-foreground">{t("totalDistance")}</p>
             </div>
           </div>
 
@@ -283,11 +283,11 @@ export function DeliveryTrackingMap({
                 <div className="flex items-center gap-2 text-green-600">
                   <CheckCircle className="size-5" />
                   <span className="font-medium">
-                    Order delivered successfully!
+                    {t("deliveredSuccess")}
                   </span>
                 </div>
                 <Button asChild>
-                  <Link href={`/orders/${orderId}`}>View Order Details</Link>
+                  <Link href={`/orders/${orderId}`}>{t("viewOrderDetails")}</Link>
                 </Button>
               </div>
             ) : (
@@ -300,12 +300,12 @@ export function DeliveryTrackingMap({
                 {isRunning ? (
                   <>
                     <Pause className="mr-1 size-4" />
-                    Pause
+                    {t("pause")}
                   </>
                 ) : (
                   <>
                     <Play className="mr-1 size-4" />
-                    Resume
+                    {t("resume")}
                   </>
                 )}
               </Button>

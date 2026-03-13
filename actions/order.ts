@@ -16,6 +16,7 @@ import {
   sendShippingUpdateEmail,
   sendDeliveryConfirmationEmail,
 } from "@/lib/email";
+import { PRICING } from "@/lib/pricing";
 
 function serializeOrder(order: Record<string, unknown>) {
   return {
@@ -201,8 +202,8 @@ export async function createOrder(
       discountAmount = Math.round(discountAmount * 100) / 100;
     }
 
-    const shippingCost = subtotal >= 100 ? 0 : 10;
-    const tax = (subtotal - discountAmount) * 0.08;
+    const shippingCost = subtotal >= PRICING.freeShippingThreshold ? 0 : PRICING.defaultShippingCost;
+    const tax = (subtotal - discountAmount) * PRICING.taxRate;
     const total = subtotal - discountAmount + shippingCost + tax;
 
     // Create order and decrement stock in a transaction
@@ -246,7 +247,7 @@ export async function createOrder(
           note: input.note,
           paymentMethod: input.paymentMethod as PaymentMethod,
           paymentStatus: "PENDING",
-          currency: input.paymentMethod === "MOMO" ? "VND" : "USD",
+          currency: "VND",
           paymentExpiry: input.paymentMethod !== "COD"
             ? new Date(Date.now() + 30 * 60 * 1000)
             : null,
@@ -355,7 +356,7 @@ export async function updateOrderStatus(orderId: string, status: string) {
             type: "ORDER_UPDATE",
             title: "Your order has been shipped!",
             message: `Order #${order.orderNumber.slice(-8).toUpperCase()} is on its way. Track your delivery now.`,
-            data: { orderId: order.id, orderNumber: order.orderNumber },
+            data: { orderId: order.id, orderNumber: order.orderNumber, status: "SHIPPED" },
             userId: order.userId,
           },
         });

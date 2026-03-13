@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/routing";
+import { Link } from "@/i18n/routing";
 import { MoreHorizontal, Eye, EyeOff, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,8 @@ export function AdminProductActions({
   isActive: boolean;
 }) {
   const router = useRouter();
+  const t = useTranslations("admin.confirm");
+  const tc = useTranslations("admin.common");
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -31,7 +34,7 @@ export function AdminProductActions({
     setLoading(true);
     const result = await updateProduct(productId, { isActive: !isActive });
     if (result.success) {
-      toast.success(isActive ? "Product deactivated" : "Product activated");
+      toast.success(isActive ? t("productDeactivated") : t("productActivated"));
       router.refresh();
     } else {
       toast.error(result.error);
@@ -43,7 +46,7 @@ export function AdminProductActions({
     setLoading(true);
     const result = await deleteProduct(productId);
     if (result.success) {
-      toast.success("Product deleted");
+      toast.success(t("productDeleted"));
       router.refresh();
     } else {
       toast.error(result.error);
@@ -64,19 +67,19 @@ export function AdminProductActions({
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/products/${productId}/edit`}>
               <Pencil className="mr-2 size-4" />
-              Edit
+              {tc("edit")}
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleToggleActive}>
             {isActive ? (
               <>
                 <EyeOff className="mr-2 size-4" />
-                Deactivate
+                {tc("deactivate")}
               </>
             ) : (
               <>
                 <Eye className="mr-2 size-4" />
-                Activate
+                {tc("activate")}
               </>
             )}
           </DropdownMenuItem>
@@ -86,7 +89,7 @@ export function AdminProductActions({
             className="text-destructive focus:text-destructive"
           >
             <Trash2 className="mr-2 size-4" />
-            Delete
+            {tc("delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -94,11 +97,11 @@ export function AdminProductActions({
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Delete product"
-        description="Are you sure you want to delete this product? This action cannot be undone."
+        title={t("deleteProduct")}
+        description={t("deleteProductDesc")}
         onConfirm={handleDelete}
         loading={loading}
-        confirmLabel="Delete"
+        confirmLabel={tc("delete")}
       />
     </>
   );

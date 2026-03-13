@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { MapPin, Loader2, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,8 @@ type DeliverySettingsFormProps = {
 export function DeliverySettingsForm({
   initialSettings,
 }: DeliverySettingsFormProps) {
+  const t = useTranslations("admin.deliverySettings");
+  const tc = useTranslations("admin.common");
   const [settings, setSettings] = useState<DeliverySettings>(initialSettings);
   const [saving, setSaving] = useState(false);
 
@@ -42,7 +45,7 @@ export function DeliverySettingsForm({
     setSaving(true);
     const result = await updateDeliverySettings(settings);
     if (result.success) {
-      toast.success("Delivery settings updated");
+      toast.success(t("updated"));
     } else {
       toast.error(result.error);
     }
@@ -55,11 +58,10 @@ export function DeliverySettingsForm({
         <div className="border-b px-6 py-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <Truck className="size-5" />
-            Delivery Simulation
+            {t("title")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Configure the simulated delivery tracking shown to customers when
-            orders are shipped.
+            {t("description")}
           </p>
         </div>
 
@@ -68,11 +70,10 @@ export function DeliverySettingsForm({
           <div className="space-y-2">
             <Label className="flex items-center gap-1.5">
               <MapPin className="size-4" />
-              Headquarters Location
+              {t("hqLocation")}
             </Label>
             <p className="text-sm text-muted-foreground">
-              Click or drag the marker to set your warehouse/HQ location.
-              Deliveries will simulate from this point.
+              {t("hqLocationHelp")}
             </p>
             <HqMapPicker
               latitude={settings.hqLatitude}
@@ -93,23 +94,23 @@ export function DeliverySettingsForm({
 
           {/* HQ Address Label */}
           <div className="space-y-2">
-            <Label htmlFor="hqAddress">HQ Label</Label>
+            <Label htmlFor="hqAddress">{t("hqLabel")}</Label>
             <Input
               id="hqAddress"
               value={settings.hqAddress}
               onChange={(e) =>
                 setSettings((s) => ({ ...s, hqAddress: e.target.value }))
               }
-              placeholder="e.g. Main Warehouse, District 1"
+              placeholder={t("hqLabelPlaceholder")}
             />
             <p className="text-xs text-muted-foreground">
-              Displayed on the map as the starting point label.
+              {t("hqLabelHelp")}
             </p>
           </div>
 
           {/* Simulation Duration */}
           <div className="space-y-2">
-            <Label htmlFor="duration">Simulation Duration (minutes)</Label>
+            <Label htmlFor="duration">{t("simulationDuration")}</Label>
             <Input
               id="duration"
               type="number"
@@ -125,8 +126,7 @@ export function DeliverySettingsForm({
               }
             />
             <p className="text-xs text-muted-foreground">
-              How long the delivery animation takes to complete (0.5 - 60
-              minutes). Lower values are better for demos.
+              {t("simulationDurationHelp")}
             </p>
           </div>
         </div>
@@ -134,24 +134,12 @@ export function DeliverySettingsForm({
 
       {/* Info box */}
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-        <p className="font-medium">How it works</p>
+        <p className="font-medium">{t("howItWorks")}</p>
         <ul className="mt-1 list-inside list-disc space-y-1 text-blue-700">
-          <li>
-            When an order status is changed to <strong>Shipped</strong>, the
-            customer gets a notification.
-          </li>
-          <li>
-            They can open a tracking page with a map showing a simulated
-            delivery from your HQ to their address.
-          </li>
-          <li>
-            The delivery marker animates along real road routes at the speed you
-            configure.
-          </li>
-          <li>
-            When the simulation completes, the order is automatically marked as{" "}
-            <strong>Delivered</strong>.
-          </li>
+          <li>{t("howItWorksInfo1")}</li>
+          <li>{t("howItWorksInfo2")}</li>
+          <li>{t("howItWorksInfo3")}</li>
+          <li>{t("howItWorksInfo4")}</li>
         </ul>
       </div>
 
@@ -162,10 +150,10 @@ export function DeliverySettingsForm({
           {saving ? (
             <>
               <Loader2 className="mr-2 size-4 animate-spin" />
-              Saving...
+              {tc("saving")}
             </>
           ) : (
-            "Save Changes"
+            tc("saveChanges")
           )}
         </Button>
       </div>

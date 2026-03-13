@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Plus, Trash2, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,6 +77,8 @@ type ProductFormProps = {
 
 export function ProductForm({ categories, facets, product }: ProductFormProps) {
   const router = useRouter();
+  const t = useTranslations("admin.productForm");
+  const tc = useTranslations("admin.common");
   const isEditing = !!product;
 
   const {
@@ -149,11 +152,11 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
     for (let i = 0; i < variants.length; i++) {
       const v = variants[i];
       if (!v.price || isNaN(Number(v.price)) || Number(v.price) < 0) {
-        toast.error(`Variant ${i + 1}: Valid price is required`);
+        toast.error(t("variantError", { index: i + 1 }));
         return;
       }
       if (v.facetValueIds.size === 0) {
-        toast.error(`Variant ${i + 1}: Select at least one option`);
+        toast.error(t("variantOptionError", { index: i + 1 }));
         return;
       }
     }
@@ -188,18 +191,18 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
 
       const variantResult = await saveProductVariants(productId, variantData);
       if (!variantResult.success) {
-        toast.error(`Product saved, but variants failed: ${variantResult.error}`);
+        toast.error(t("variantsFailed", { error: variantResult.error ?? "" }));
         return;
       }
     } else if (productId && variants.length === 0 && isEditing) {
       const variantResult = await saveProductVariants(productId, []);
       if (!variantResult.success) {
-        toast.error(`Product saved, but clearing variants failed: ${variantResult.error}`);
+        toast.error(t("clearVariantsFailed", { error: variantResult.error ?? "" }));
         return;
       }
     }
 
-    toast.success(isEditing ? "Product updated" : "Product created");
+    toast.success(isEditing ? t("productUpdated") : t("productCreated"));
     router.push("/dashboard/products");
     router.refresh();
   }
@@ -241,20 +244,20 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" />
-        Back to products
+        {tc("backToProducts")}
       </Link>
 
       <div className="space-y-6">
         {/* Basic info */}
         <div className="rounded-lg border p-6 space-y-4">
-          <h2 className="text-lg font-semibold">Basic Information</h2>
+          <h2 className="text-lg font-semibold">{t("basicInfo")}</h2>
 
           <div className="space-y-2">
-            <Label htmlFor="name">Name *</Label>
+            <Label htmlFor="name">{t("name")} *</Label>
             <Input
               id="name"
               {...register("name")}
-              placeholder="Product name"
+              placeholder={t("namePlaceholder")}
             />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -262,11 +265,11 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t("description")}</Label>
             <Textarea
               id="description"
               {...register("description")}
-              placeholder="Product description"
+              placeholder={t("descriptionPlaceholder")}
               rows={4}
             />
             {errors.description && (
@@ -276,16 +279,16 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-sm">Category</Label>
+              <Label className="text-sm">{t("category")}</Label>
               <Select
                 value={categoryId}
                 onValueChange={(val) => setValue("categoryId", val)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder={t("selectCategory")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No category</SelectItem>
+                  <SelectItem value="none">{t("noCategory")}</SelectItem>
                   {categoryOptions.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.depth > 0 ? `— ${cat.name}` : cat.name}
@@ -300,7 +303,7 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
                   checked={isActive}
                   onCheckedChange={(checked) => setValue("isActive", checked === true)}
                 />
-                Active (visible in store)
+                {t("activeVisible")}
               </label>
             </div>
           </div>
@@ -308,23 +311,26 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
 
         {/* Pricing */}
         <div className="rounded-lg border p-6 space-y-4">
-          <h2 className="text-lg font-semibold">Pricing</h2>
+          <h2 className="text-lg font-semibold">{t("pricing")}</h2>
           {variants.length > 0 && (
             <p className="text-sm text-amber-600 dark:text-amber-400">
-              This product has variants. The price below is the default/display price.
-              Each variant can override it.
+              {t("variantPriceNote")}
             </p>
           )}
           <div className="space-y-2">
-            <Label htmlFor="price">Price *</Label>
-            <Input
-              id="price"
-              type="number"
-              step="0.01"
-              min="0"
-              {...register("price")}
-              placeholder="0.00"
-            />
+            <Label htmlFor="price">{t("price")} (VND) *</Label>
+            <div className="relative">
+              <Input
+                id="price"
+                type="number"
+                step="1000"
+                min="0"
+                {...register("price")}
+                placeholder="500000"
+                className="pr-12"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₫</span>
+            </div>
             {errors.price && (
               <p className="text-sm text-destructive">{errors.price.message}</p>
             )}
@@ -333,15 +339,15 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
 
         {/* Inventory */}
         <div className="rounded-lg border p-6 space-y-4">
-          <h2 className="text-lg font-semibold">Inventory</h2>
+          <h2 className="text-lg font-semibold">{t("inventory")}</h2>
           {variants.length > 0 && (
             <p className="text-sm text-amber-600 dark:text-amber-400">
-              Stock is tracked per variant. The stock below is the default for simple display.
+              {t("variantStockNote")}
             </p>
           )}
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="sku">SKU</Label>
+              <Label htmlFor="sku">{t("sku")}</Label>
               <Input
                 id="sku"
                 {...register("sku")}
@@ -349,7 +355,7 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="stock">Stock</Label>
+              <Label htmlFor="stock">{t("stock")}</Label>
               <Input
                 id="stock"
                 type="number"
@@ -358,7 +364,7 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lowStockThreshold">Low Stock Alert</Label>
+              <Label htmlFor="lowStockThreshold">{t("lowStockAlert")}</Label>
               <Input
                 id="lowStockThreshold"
                 type="number"
@@ -367,7 +373,7 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
                 placeholder="10"
               />
               <p className="text-xs text-muted-foreground">
-                Alert when stock falls to this level
+                {t("lowStockAlertHelp")}
               </p>
             </div>
           </div>
@@ -375,9 +381,9 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
 
         {/* Images */}
         <div className="rounded-lg border p-6 space-y-4">
-          <h2 className="text-lg font-semibold">Images</h2>
+          <h2 className="text-lg font-semibold">{t("images")}</h2>
           <p className="text-sm text-muted-foreground">
-            Add image URLs for the product.
+            {t("imagesHelp")}
           </p>
           <div className="space-y-2">
             {images.map((img, i) => (
@@ -408,17 +414,16 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
             className="gap-1"
           >
             <Plus className="size-4" />
-            Add Image
+            {t("addImage")}
           </Button>
         </div>
 
         {/* Facets */}
         {facets.length > 0 && (
           <div className="rounded-lg border p-6 space-y-4">
-            <h2 className="text-lg font-semibold">Attributes</h2>
+            <h2 className="text-lg font-semibold">{t("attributes")}</h2>
             <p className="text-sm text-muted-foreground">
-              Select the attribute values that apply to this product (used for
-              filtering &amp; SEO).
+              {t("attributesHelp")}
             </p>
             <div className="space-y-4">
               {facets.map((facet) => (
@@ -459,17 +464,17 @@ export function ProductForm({ categories, facets, product }: ProductFormProps) {
         <div className="flex items-center gap-3">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting
-              ? "Saving..."
+              ? tc("saving")
               : isEditing
-                ? "Update Product"
-                : "Create Product"}
+                ? t("updateProduct")
+                : t("createProduct")}
           </Button>
           <Button
             type="button"
             variant="outline"
             onClick={() => router.push("/dashboard/products")}
           >
-            Cancel
+            {tc("cancel")}
           </Button>
         </div>
       </div>

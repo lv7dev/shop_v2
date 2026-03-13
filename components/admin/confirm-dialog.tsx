@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,8 +32,10 @@ export function ConfirmDialog({
   onConfirm,
   loading,
   variant = "destructive",
-  confirmLabel = "Confirm",
+  confirmLabel,
 }: ConfirmDialogProps) {
+  const t = useTranslations("admin.common");
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -41,13 +44,13 @@ export function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading}>{t("cancel")}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             disabled={loading}
             className={buttonVariants({ variant })}
           >
-            {loading ? "Please wait..." : confirmLabel}
+            {loading ? t("pleaseWait") : (confirmLabel ?? t("confirm"))}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

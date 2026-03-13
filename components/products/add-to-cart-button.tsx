@@ -2,6 +2,7 @@
 
 import { ShoppingCart, Check } from "lucide-react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cart-store";
@@ -17,13 +18,14 @@ type AddToCartButtonProps = {
 };
 
 export function AddToCartButton({ product }: AddToCartButtonProps) {
+  const t = useTranslations();
   const addItem = useCartStore((s) => s.addItem);
   const [added, setAdded] = useState(false);
 
   if (product.stock === 0) {
     return (
       <Button type="button" className="w-full" disabled>
-        Out of Stock
+        {t("product.outOfStock")}
       </Button>
     );
   }
@@ -33,7 +35,7 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
     e.stopPropagation();
     addItem(product);
     setAdded(true);
-    toast.success(`${product.name} added to cart`);
+    toast.success(t("product.addedToCart", { name: product.name }));
     setTimeout(() => setAdded(false), 1500);
   }
 
@@ -42,12 +44,12 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
       {added ? (
         <>
           <Check className="size-4" />
-          Added
+          {t("product.added")}
         </>
       ) : (
         <>
           <ShoppingCart className="size-4" />
-          Add to Cart
+          {t("product.addToCart")}
         </>
       )}
     </Button>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
+import { useLocale, useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
@@ -23,6 +24,8 @@ import {
 } from "@/lib/validations/checkout";
 import { CheckoutAddressSelector } from "./checkout-address-selector";
 import { PaymentMethodSelector } from "./payment-method-selector";
+import { formatPrice } from "@/lib/utils";
+import { PRICING } from "@/lib/pricing";
 import type { PaymentMethodType } from "@/lib/validations/checkout";
 
 type Address = {
@@ -59,6 +62,8 @@ export function CheckoutForm({
   isAuthenticated = false,
   enabledPaymentMethods = ["COD"],
 }: CheckoutFormProps) {
+  const t = useTranslations();
+  const locale = useLocale();
   const router = useRouter();
   const items = useCartStore((s) => s.items);
   const hydrated = useCartStore((s) => s._hydrated);
@@ -85,8 +90,8 @@ export function CheckoutForm({
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
 
   const discountAmount = appliedDiscounts.reduce((sum, d) => sum + d.amount, 0);
-  const shippingCost = totalPrice >= 100 ? 0 : 10;
-  const tax = (totalPrice - discountAmount) * 0.08;
+  const shippingCost = totalPrice >= PRICING.freeShippingThreshold ? 0 : PRICING.defaultShippingCost;
+  const tax = (totalPrice - discountAmount) * PRICING.taxRate;
   const total = totalPrice - discountAmount + shippingCost + tax;
 
   const hasAutoApplied = appliedDiscounts.some((d) => d.method === "AUTO");
@@ -163,12 +168,12 @@ export function CheckoutForm({
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <ShoppingBag className="mb-4 size-16 text-muted-foreground" />
-        <h2 className="mb-2 text-xl font-semibold">No items to checkout</h2>
+        <h2 className="mb-2 text-xl font-semibold">{t("checkout.noItems")}</h2>
         <p className="mb-6 text-muted-foreground">
-          Add some products to your cart first.
+          {t("checkout.noItemsDescription")}
         </p>
         <Button onClick={() => router.push("/products")}>
-          Browse Products
+          {t("checkout.browseProducts")}
         </Button>
       </div>
     );
@@ -190,10 +195,10 @@ export function CheckoutForm({
     if (result.success && result.discount) {
       if (result.replaceAll) {
         setAppliedDiscounts([result.discount]);
-        toast.success(`Discount "${result.discount.code}" applied (replaced previous discounts)`);
+        toast.success(t("checkout.discountApplied", { code: result.discount.code }));
       } else {
         setAppliedDiscounts((prev) => [...prev, result.discount!]);
-        toast.success(`Discount "${result.discount.code}" applied!`);
+        toast.success(t("checkout.discountApplied", { code: result.discount.code }));
       }
       setDiscountCodeInput("");
     } else {
@@ -204,7 +209,7 @@ export function CheckoutForm({
 
   function handleRemoveDiscount(discountId: string) {
     setAppliedDiscounts((prev) => prev.filter((d) => d.id !== discountId));
-    toast.info("Discount removed");
+    toast.info(t("checkout.discountRemoved"));
   }
 
   async function onSubmit(values: CheckoutInput) {
@@ -250,7 +255,7 @@ export function CheckoutForm({
 
       if (paymentMethod === "COD") {
         clearCart();
-        toast.success("Order placed successfully!");
+        toast.success(t("checkout.orderSuccess"));
         router.push(`/orders/${order.id}?new=true`);
       } else if (paymentMethod === "STRIPE") {
         const res = await fetch("/api/checkout/stripe", {
@@ -263,7 +268,7 @@ export function CheckoutForm({
           clearCart();
           window.location.assign(data.url);
         } else {
-          toast.error("Failed to initiate payment. Please try again.");
+          toast.error(t("checkout.paymentFailed"));
         }
       } else if (paymentMethod === "MOMO") {
         const res = await fetch("/api/checkout/momo", {
@@ -276,11 +281,11 @@ export function CheckoutForm({
           clearCart();
           window.location.assign(data.payUrl);
         } else {
-          toast.error("Failed to initiate MoMo payment. Please try again.");
+          toast.error(t("checkout.paymentFailed"));
         }
       }
     } catch {
-      toast.error("Something went wrong. Please try again.");
+      toast.error(t("checkout.somethingWrong"));
     }
   }
 
@@ -289,7 +294,7 @@ export function CheckoutForm({
       {/* Shipping form */}
       <div className="space-y-6 lg:col-span-3">
         <div className="rounded-lg border p-6">
-          <h2 className="mb-4 text-lg font-semibold">Shipping Address</h2>
+          <h2 className="mb-4 text-lg font-semibold">{t("checkout.shippingAddress")}</h2>
 
           {/* Saved address selector */}
           {addresses.length > 0 && (
@@ -303,7 +308,7 @@ export function CheckoutForm({
           <div className="grid gap-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name *</Label>
+                <Label htmlFor="name">{t("checkout.fullName")} *</Label>
                 <Input
                   id="name"
                   {...register("shipping.name")}
@@ -318,7 +323,7 @@ export function CheckoutForm({
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">{t("checkout.phone")}</Label>
                 <Input
                   id="phone"
                   {...register("shipping.phone")}
@@ -330,7 +335,7 @@ export function CheckoutForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="street">Street Address *</Label>
+              <Label htmlFor="street">{t("checkout.streetAddress")} *</Label>
               <Input
                 id="street"
                 {...register("shipping.street")}
@@ -347,7 +352,7 @@ export function CheckoutForm({
 
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="city">City *</Label>
+                <Label htmlFor="city">{t("checkout.city")} *</Label>
                 <Input
                   id="city"
                   {...register("shipping.city")}
@@ -362,7 +367,7 @@ export function CheckoutForm({
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="state">State *</Label>
+                <Label htmlFor="state">{t("checkout.state")} *</Label>
                 <Input
                   id="state"
                   {...register("shipping.state")}
@@ -377,7 +382,7 @@ export function CheckoutForm({
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="zipCode">ZIP Code *</Label>
+                <Label htmlFor="zipCode">{t("checkout.zipCode")} *</Label>
                 <Input
                   id="zipCode"
                   {...register("shipping.zipCode")}
@@ -394,7 +399,7 @@ export function CheckoutForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="country">Country *</Label>
+              <Label htmlFor="country">{t("checkout.country")} *</Label>
               <Input
                 id="country"
                 {...register("shipping.country")}
@@ -423,7 +428,7 @@ export function CheckoutForm({
                   htmlFor="save-address"
                   className="cursor-pointer text-sm"
                 >
-                  Save this address for future orders
+                  {t("checkout.saveAddress")}
                 </Label>
               </div>
             )}
@@ -431,10 +436,10 @@ export function CheckoutForm({
         </div>
 
         <div className="rounded-lg border p-6">
-          <h2 className="mb-4 text-lg font-semibold">Order Notes</h2>
+          <h2 className="mb-4 text-lg font-semibold">{t("checkout.orderNotes")}</h2>
           <Textarea
             {...register("note")}
-            placeholder="Any special instructions for your order..."
+            placeholder={t("checkout.orderNotesPlaceholder")}
             rows={3}
           />
           {errors.note && (
@@ -458,7 +463,7 @@ export function CheckoutForm({
       <div className="lg:col-span-2">
         <div className="rounded-lg border p-6">
           <h2 className="mb-4 text-lg font-semibold">
-            Order Review ({totalItems} {totalItems === 1 ? "item" : "items"})
+            {t("checkout.orderReview")} ({t("cart.itemCount", { count: totalItems })})
           </h2>
 
           <div className="mb-4 max-h-64 space-y-3 overflow-y-auto">
@@ -485,11 +490,11 @@ export function CheckoutForm({
                     <p className="text-xs text-muted-foreground">{item.variantLabel}</p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    {item.quantity} x ${item.price.toFixed(2)}
+                    {item.quantity} x {formatPrice(item.price, locale)}
                   </p>
                 </div>
                 <span className="text-sm font-medium">
-                  ${(item.price * item.quantity).toFixed(2)}
+                  {formatPrice(item.price * item.quantity, locale)}
                 </span>
               </div>
             ))}
@@ -523,7 +528,7 @@ export function CheckoutForm({
                   {discount.method === "AUTO" && (
                     <span className="text-xs opacity-75">Auto</span>
                   )}
-                  <span>-${discount.amount.toFixed(2)}</span>
+                  <span>-{formatPrice(discount.amount, locale)}</span>
                 </div>
                 {discount.method !== "AUTO" && (
                   <Button
@@ -543,7 +548,7 @@ export function CheckoutForm({
             {(!hasManualCode || appliedDiscounts.every((d) => d.stackable)) && (
               <div className="flex gap-2">
                 <Input
-                  placeholder="Discount code"
+                  placeholder={t("checkout.discountCode")}
                   value={discountCodeInput}
                   onChange={(e) => setDiscountCodeInput(e.target.value.toUpperCase())}
                   onKeyDown={(e) => {
@@ -564,7 +569,7 @@ export function CheckoutForm({
                   {applyingDiscount ? (
                     <Loader2 className="size-4 animate-spin" />
                   ) : (
-                    "Apply"
+                    t("checkout.apply")
                   )}
                 </Button>
               </div>
@@ -573,40 +578,40 @@ export function CheckoutForm({
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span>${totalPrice.toFixed(2)}</span>
+              <span className="text-muted-foreground">{t("cart.subtotal")}</span>
+              <span>{formatPrice(totalPrice, locale)}</span>
             </div>
             {discountAmount > 0 && (
               <div className="flex justify-between text-green-600">
                 <span>
-                  Discount ({appliedDiscounts.map((d) => d.code).join(" + ")})
+                  {t("checkout.discount")} ({appliedDiscounts.map((d) => d.code).join(" + ")})
                   {hasAutoApplied && (
                     <Zap className="ml-1 inline size-3" />
                   )}
                 </span>
-                <span>-${discountAmount.toFixed(2)}</span>
+                <span>-{formatPrice(discountAmount, locale)}</span>
               </div>
             )}
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Shipping</span>
+              <span className="text-muted-foreground">{t("cart.shipping")}</span>
               <span>
                 {shippingCost === 0 ? (
-                  <span className="text-green-600">Free</span>
+                  <span className="text-green-600">{t("cart.shippingFree")}</span>
                 ) : (
-                  `$${shippingCost.toFixed(2)}`
+                  formatPrice(shippingCost, locale)
                 )}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Tax (8%)</span>
-              <span>${tax.toFixed(2)}</span>
+              <span className="text-muted-foreground">{t("cart.tax")}</span>
+              <span>{formatPrice(tax, locale)}</span>
             </div>
 
             <Separator />
 
             <div className="flex justify-between text-base font-semibold">
-              <span>Total</span>
-              <span>${total.toFixed(2)}</span>
+              <span>{t("cart.total")}</span>
+              <span>{formatPrice(total, locale)}</span>
             </div>
           </div>
 
@@ -614,21 +619,21 @@ export function CheckoutForm({
             {isSubmitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Processing...
+                {t("checkout.processing")}
               </>
             ) : paymentMethod === "STRIPE" ? (
-              `Pay with Card - $${total.toFixed(2)}`
+              `${t("checkout.payWithCard")} - ${formatPrice(total, locale)}`
             ) : paymentMethod === "MOMO" ? (
-              `Pay with MoMo - $${total.toFixed(2)}`
+              `${t("checkout.payWithMomo")} - ${formatPrice(total, locale)}`
             ) : (
-              `Place Order - $${total.toFixed(2)}`
+              `${t("checkout.placeOrder")} - ${formatPrice(total, locale)}`
             )}
           </Button>
 
           <p className="mt-3 text-center text-xs text-muted-foreground">
-            {paymentMethod === "COD" && "Payment will be collected on delivery"}
-            {paymentMethod === "STRIPE" && "You will be redirected to Stripe to complete payment"}
-            {paymentMethod === "MOMO" && "You will be redirected to MoMo to complete payment"}
+            {paymentMethod === "COD" && t("checkout.codDescription")}
+            {paymentMethod === "STRIPE" && t("checkout.stripeDescription")}
+            {paymentMethod === "MOMO" && t("checkout.momoDescription")}
           </p>
         </div>
       </div>

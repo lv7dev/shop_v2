@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/i18n/routing";
+import { useTranslations } from "next-intl";
 import {
   ShoppingCart,
   Heart,
@@ -28,9 +28,9 @@ import { useNotificationStore } from "@/store/notification-store";
 import { APP_NAME } from "@/lib/constants";
 
 const NAV_ITEMS = [
-  { label: "Home", href: "/", icon: Home },
-  { label: "Products", href: "/products", icon: Package },
-  { label: "Categories", href: "/categories", icon: Grid3X3 },
+  { key: "common.home" as const, href: "/" as const, icon: Home },
+  { key: "common.products" as const, href: "/products" as const, icon: Package },
+  { key: "common.categories" as const, href: "/categories" as const, icon: Grid3X3 },
 ];
 
 type MobileMenuProps = {
@@ -57,6 +57,7 @@ export function MobileMenu({
   onClose,
   onLogout,
 }: MobileMenuProps) {
+  const t = useTranslations();
   const router = useRouter();
   const unreadCount = useNotificationStore((s) => s.unreadCount());
   const notifHydrated = useNotificationStore((s) => s._hydrated);
@@ -85,7 +86,7 @@ export function MobileMenu({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search products..."
+              placeholder={`${t("common.search")}...`}
               className="w-full rounded-lg border bg-muted/50 py-2.5 pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:bg-background focus:ring-2 focus:ring-primary/20"
             />
           </div>
@@ -98,7 +99,7 @@ export function MobileMenu({
               {(user.name || user.email).charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{user.name || "User"}</p>
+              <p className="truncate text-sm font-medium">{user.name || t("common.user")}</p>
               <p className="truncate text-xs text-muted-foreground">{user.email}</p>
             </div>
           </div>
@@ -107,7 +108,7 @@ export function MobileMenu({
         {/* Navigation */}
         <nav className="flex flex-col gap-1 p-4">
           <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Navigate
+            {t("nav.navigate")}
           </p>
           {NAV_ITEMS.map((link) => (
             <Link
@@ -117,7 +118,7 @@ export function MobileMenu({
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
             >
               <link.icon className="size-4 text-muted-foreground" />
-              {link.label}
+              {t(link.key)}
             </Link>
           ))}
           <Link
@@ -126,7 +127,7 @@ export function MobileMenu({
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
           >
             <ShoppingCart className="size-4 text-muted-foreground" />
-            Cart
+            {t("common.cart")}
             {hydrated && totalItems > 0 && (
               <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                 {totalItems}
@@ -139,7 +140,7 @@ export function MobileMenu({
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
           >
             <Heart className="size-4 text-muted-foreground" />
-            Wishlist
+            {t("common.wishlist")}
             {wishlistHydrated && wishlistCount > 0 && (
               <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
                 {wishlistCount}
@@ -153,7 +154,7 @@ export function MobileMenu({
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
             >
               <Bell className="size-4 text-muted-foreground" />
-              Notifications
+              {t("common.notifications")}
               {notifHydrated && unreadCount > 0 && (
                 <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                   {unreadCount > 9 ? "9+" : unreadCount}
@@ -168,7 +169,7 @@ export function MobileMenu({
         {/* Account section */}
         <div className="flex flex-col gap-1 p-4">
           <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Account
+            {t("common.account")}
           </p>
           {user ? (
             <>
@@ -178,7 +179,7 @@ export function MobileMenu({
                 className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
               >
                 <UserCircle className="size-4 text-muted-foreground" />
-                My Account
+                {t("nav.myAccount")}
               </Link>
               <Link
                 href="/orders"
@@ -186,7 +187,7 @@ export function MobileMenu({
                 className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
               >
                 <ClipboardList className="size-4 text-muted-foreground" />
-                My Orders
+                {t("nav.myOrders")}
               </Link>
               {user.role === "ADMIN" && (
                 <Link
@@ -195,7 +196,7 @@ export function MobileMenu({
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
                 >
                   <LayoutDashboard className="size-4 text-muted-foreground" />
-                  Admin Dashboard
+                  {t("nav.adminDashboard")}
                 </Link>
               )}
 
@@ -209,7 +210,7 @@ export function MobileMenu({
                 className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
               >
                 <LogOut className="size-4" />
-                Sign Out
+                {t("common.signOut")}
               </button>
             </>
           ) : (
@@ -220,7 +221,7 @@ export function MobileMenu({
                 className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
               >
                 <LogIn className="size-4 text-muted-foreground" />
-                Sign In
+                {t("common.signIn")}
               </Link>
               <Link
                 href="/register"
@@ -228,7 +229,7 @@ export function MobileMenu({
                 className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
               >
                 <UserPlus className="size-4 text-muted-foreground" />
-                Sign Up
+                {t("common.signUp")}
               </Link>
             </>
           )}

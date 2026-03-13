@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useRouter } from "@/i18n/routing";
+import { Link } from "@/i18n/routing";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,8 @@ export function DiscountForm({
   products,
 }: DiscountFormProps) {
   const router = useRouter();
+  const t = useTranslations("admin.discountForm");
+  const tc = useTranslations("admin.common");
   const [loading, setLoading] = useState(false);
   const isEditing = !!discount;
 
@@ -120,7 +123,7 @@ export function DiscountForm({
       : await createDiscount(data);
 
     if (result.success) {
-      toast.success(isEditing ? "Discount updated" : "Discount created");
+      toast.success(isEditing ? t("discountUpdated") : t("discountCreated"));
       router.push("/dashboard/discounts");
       router.refresh();
     } else {
@@ -133,10 +136,10 @@ export function DiscountForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="disc-code">Code</Label>
+          <Label htmlFor="disc-code">{t("code")}</Label>
           <Input
             id="disc-code"
-            placeholder="e.g. SUMMER25"
+            placeholder={t("codePlaceholder")}
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             autoFocus
@@ -144,7 +147,7 @@ export function DiscountForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="disc-value">
-            Value ({type === "PERCENTAGE" ? "%" : "$"})
+            {t("value", { unit: type === "PERCENTAGE" ? "%" : "VND" })}
           </Label>
           <Input
             id="disc-value"
@@ -160,10 +163,10 @@ export function DiscountForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="disc-desc">Description</Label>
+        <Label htmlFor="disc-desc">{t("description")}</Label>
         <Textarea
           id="disc-desc"
-          placeholder="Optional description"
+          placeholder={t("descriptionPlaceholder")}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
@@ -172,38 +175,38 @@ export function DiscountForm({
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
-          <Label>Type</Label>
+          <Label>{t("type")}</Label>
           <Select value={type} onValueChange={(v) => setType(v as "PERCENTAGE" | "FIXED")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
-              <SelectItem value="FIXED">Fixed Amount ($)</SelectItem>
+              <SelectItem value="PERCENTAGE">{t("typePercentage")}</SelectItem>
+              <SelectItem value="FIXED">{t("typeFixed")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Scope</Label>
+          <Label>{t("scope")}</Label>
           <Select value={scope} onValueChange={(v) => setScope(v as "ORDER" | "PRODUCT")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ORDER">Entire Order</SelectItem>
-              <SelectItem value="PRODUCT">Specific Products</SelectItem>
+              <SelectItem value="ORDER">{t("scopeOrder")}</SelectItem>
+              <SelectItem value="PRODUCT">{t("scopeProduct")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Method</Label>
+          <Label>{t("method")}</Label>
           <Select value={method} onValueChange={(v) => setMethod(v as "AUTO" | "CODE")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="CODE">Enter Code</SelectItem>
-              <SelectItem value="AUTO">Auto-Apply</SelectItem>
+              <SelectItem value="CODE">{t("methodCode")}</SelectItem>
+              <SelectItem value="AUTO">{t("methodAuto")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -212,12 +215,12 @@ export function DiscountForm({
       {scope === "PRODUCT" && (
         <div className="space-y-2">
           <Label>
-            Products ({selectedProductIds.length} selected)
+            {t("products", { count: selectedProductIds.length })}
           </Label>
           <div className="max-h-48 overflow-y-auto rounded-md border p-2">
             {products.length === 0 ? (
               <p className="py-2 text-center text-sm text-muted-foreground">
-                No products available
+                {t("noProducts")}
               </p>
             ) : (
               products.map((p) => (
@@ -239,24 +242,24 @@ export function DiscountForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="disc-min">Min Order ($)</Label>
+          <Label htmlFor="disc-min">{t("minOrder")}</Label>
           <Input
             id="disc-min"
             type="number"
             step="0.01"
             min="0"
-            placeholder="No minimum"
+            placeholder={t("noMinimum")}
             value={minOrder}
             onChange={(e) => setMinOrder(e.target.value)}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="disc-max">Max Uses</Label>
+          <Label htmlFor="disc-max">{t("maxUses")}</Label>
           <Input
             id="disc-max"
             type="number"
             min="1"
-            placeholder="Unlimited"
+            placeholder={t("unlimited")}
             value={maxUses}
             onChange={(e) => setMaxUses(e.target.value)}
           />
@@ -265,7 +268,7 @@ export function DiscountForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="disc-start">Starts At</Label>
+          <Label htmlFor="disc-start">{t("startsAt")}</Label>
           <Input
             id="disc-start"
             type="datetime-local"
@@ -274,7 +277,7 @@ export function DiscountForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="disc-end">Expires At</Label>
+          <Label htmlFor="disc-end">{t("expiresAt")}</Label>
           <Input
             id="disc-end"
             type="datetime-local"
@@ -290,26 +293,26 @@ export function DiscountForm({
             checked={isActive}
             onCheckedChange={(v) => setIsActive(v === true)}
           />
-          <span className="text-sm">Active</span>
+          <span className="text-sm">{t("activeLabel")}</span>
         </label>
         <label className="flex cursor-pointer items-center gap-2">
           <Checkbox
             checked={stackable}
             onCheckedChange={(v) => setStackable(v === true)}
           />
-          <span className="text-sm">Stackable with other discounts</span>
+          <span className="text-sm">{t("stackable")}</span>
         </label>
       </div>
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" asChild>
-          <Link href="/dashboard/discounts">Cancel</Link>
+          <Link href="/dashboard/discounts">{tc("cancel")}</Link>
         </Button>
         <Button
           type="submit"
           disabled={loading || !code.trim() || !value}
         >
-          {loading ? "Saving..." : isEditing ? "Update" : "Create"}
+          {loading ? tc("saving") : isEditing ? tc("update") : tc("create")}
         </Button>
       </div>
     </form>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/routing";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,8 @@ export function DiscountDeleteButton({
   discountId: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("admin.confirm");
+  const tc = useTranslations("admin.common");
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -21,7 +24,7 @@ export function DiscountDeleteButton({
     setLoading(true);
     const result = await deleteDiscount(discountId);
     if (result.success) {
-      toast.success("Discount deleted");
+      toast.success(t("discountDeleted"));
       router.refresh();
     } else {
       toast.error(result.error);
@@ -45,11 +48,11 @@ export function DiscountDeleteButton({
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Delete discount"
-        description="Delete this discount code? This action cannot be undone."
+        title={t("deleteDiscount")}
+        description={t("deleteDiscountDesc")}
         onConfirm={handleDelete}
         loading={loading}
-        confirmLabel="Delete"
+        confirmLabel={tc("delete")}
       />
     </>
   );
@@ -63,13 +66,15 @@ export function DiscountToggleButton({
   isActive: boolean;
 }) {
   const router = useRouter();
+  const t = useTranslations("admin.confirm");
+  const tc = useTranslations("admin.common");
   const [loading, setLoading] = useState(false);
 
   async function handleToggle() {
     setLoading(true);
     const result = await toggleDiscount(discountId);
     if (result.success) {
-      toast.success(isActive ? "Discount deactivated" : "Discount activated");
+      toast.success(isActive ? t("discountDeactivated") : t("discountActivated"));
       router.refresh();
     } else {
       toast.error(result.error);
@@ -85,7 +90,7 @@ export function DiscountToggleButton({
       onClick={handleToggle}
       disabled={loading}
     >
-      {isActive ? "Deactivate" : "Activate"}
+      {isActive ? tc("deactivate") : tc("activate")}
     </Button>
   );
 }

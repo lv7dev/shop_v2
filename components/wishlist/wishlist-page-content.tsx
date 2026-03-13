@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { Heart, ShoppingCart, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,8 @@ import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/lib/utils";
 
 export function WishlistPageContent() {
+  const t = useTranslations();
+  const locale = useLocale();
   const items = useWishlistStore((s) => s.items);
   const removeItem = useWishlistStore((s) => s.removeItem);
   const clearWishlist = useWishlistStore((s) => s.clearWishlist);
@@ -28,17 +31,17 @@ export function WishlistPageContent() {
       stock: item.stock,
     });
     removeItem(item.productId);
-    toast.success(`${item.name} moved to cart`);
+    toast.success(t("wishlist.movedToCart", { name: item.name }));
   }
 
   function handleRemove(item: WishlistItem) {
     removeItem(item.productId);
-    toast.success(`${item.name} removed from wishlist`);
+    toast.success(t("wishlist.removedFromWishlist"));
   }
 
   function handleClear() {
     clearWishlist();
-    toast.success("Wishlist cleared");
+    toast.success(t("wishlist.cleared"));
   }
 
   if (!hydrated) {
@@ -57,11 +60,11 @@ export function WishlistPageContent() {
   return (
     <>
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">My Wishlist</h1>
+        <h1 className="text-3xl font-bold">{t("wishlist.title")}</h1>
         {items.length > 0 && (
           <Button variant="outline" size="sm" onClick={handleClear}>
             <Trash2 className="mr-2 size-4" />
-            Clear All
+            {t("wishlist.clearAll")}
           </Button>
         )}
       </div>
@@ -70,13 +73,13 @@ export function WishlistPageContent() {
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Heart className="mb-4 size-16 text-muted-foreground" />
           <h2 className="mb-2 text-xl font-semibold">
-            Your wishlist is empty
+            {t("wishlist.empty")}
           </h2>
           <p className="mb-6 text-muted-foreground">
-            Browse our products and save your favorites here.
+            {t("wishlist.emptyDesc")}
           </p>
           <Button asChild>
-            <Link href="/products">Browse Products</Link>
+            <Link href="/products">{t("wishlist.browseProducts")}</Link>
           </Button>
         </div>
       ) : (
@@ -104,7 +107,7 @@ export function WishlistPageContent() {
                   {item.stock === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                       <Badge variant="secondary" className="text-sm">
-                        Out of Stock
+                        {t("product.outOfStock")}
                       </Badge>
                     </div>
                   )}
@@ -118,7 +121,7 @@ export function WishlistPageContent() {
                 </Link>
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-bold">
-                    {formatPrice(item.price)}
+                    {formatPrice(item.price, locale)}
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -132,7 +135,7 @@ export function WishlistPageContent() {
                     }}
                   >
                     <ShoppingCart className="mr-1 size-3.5" />
-                    {item.stock === 0 ? "Out of Stock" : "Move to Cart"}
+                    {item.stock === 0 ? t("product.outOfStock") : t("wishlist.moveToCart")}
                   </Button>
                   <Button
                     size="sm"

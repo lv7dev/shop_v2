@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import {
   Bar,
   BarChart,
@@ -14,18 +15,21 @@ type Props = {
   data: { date: string; orders: number }[];
 };
 
-function formatDate(date: string) {
-  return new Date(date + "T00:00:00").toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 export function OrdersChart({ data }: Props) {
+  const locale = useLocale();
+  const t = useTranslations("admin.dashboard");
+
+  function formatDate(date: string) {
+    return new Date(date + "T00:00:00").toLocaleDateString(locale, {
+      month: "short",
+      day: "numeric",
+    });
+  }
+
   if (data.length === 0) {
     return (
       <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
-        No order data yet
+        {t("noOrderData")}
       </div>
     );
   }
@@ -50,7 +54,7 @@ export function OrdersChart({ data }: Props) {
         />
         <Tooltip
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          formatter={((value: number) => [value, "Orders"]) as any}
+          formatter={((value: number) => [value, t("orders")]) as any}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           labelFormatter={((label: string) => formatDate(label)) as any}
           contentStyle={{

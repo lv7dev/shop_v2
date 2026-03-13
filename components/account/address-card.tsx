@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { MapPin, Pencil, Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ type AddressCardProps = {
 
 export function AddressCard({ address }: AddressCardProps) {
   const router = useRouter();
+  const t = useTranslations("account.address");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [settingDefault, setSettingDefault] = useState(false);
@@ -41,7 +43,7 @@ export function AddressCard({ address }: AddressCardProps) {
     setDeleting(true);
     const result = await deleteAddress(address.id);
     if (result.success) {
-      toast.success("Address deleted");
+      toast.success(t("deleted"));
       setConfirmOpen(false);
       router.refresh();
     } else {
@@ -54,7 +56,7 @@ export function AddressCard({ address }: AddressCardProps) {
     setSettingDefault(true);
     const result = await setDefaultAddress(address.id);
     if (result.success) {
-      toast.success("Default address updated");
+      toast.success(t("defaultUpdated"));
       router.refresh();
     } else {
       toast.error(result.error);
@@ -67,7 +69,7 @@ export function AddressCard({ address }: AddressCardProps) {
       {address.isDefault && (
         <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
           <Star className="size-3 fill-current" />
-          Default
+          {t("default")}
         </span>
       )}
 
@@ -99,7 +101,7 @@ export function AddressCard({ address }: AddressCardProps) {
             disabled={settingDefault}
           >
             <Star className="size-3" />
-            {settingDefault ? "Setting..." : "Set Default"}
+            {settingDefault ? t("setting") : t("setDefault")}
           </Button>
         )}
 
@@ -108,7 +110,7 @@ export function AddressCard({ address }: AddressCardProps) {
           trigger={
             <Button variant="ghost" size="sm" className="h-8 text-xs">
               <Pencil className="size-3" />
-              Edit
+              {t("edit")}
             </Button>
           }
         />
@@ -120,7 +122,7 @@ export function AddressCard({ address }: AddressCardProps) {
           onClick={() => setConfirmOpen(true)}
         >
           <Trash2 className="size-3" />
-          Delete
+          {t("delete")}
         </Button>
       </div>
 
@@ -128,22 +130,21 @@ export function AddressCard({ address }: AddressCardProps) {
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Address</DialogTitle>
+            <DialogTitle>{t("deleteTitle")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this address? This action cannot be
-              undone.
+              {t("deleteDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
               disabled={deleting}
             >
-              {deleting ? "Deleting..." : "Delete"}
+              {deleting ? t("deleting") : t("delete")}
             </Button>
           </div>
         </DialogContent>

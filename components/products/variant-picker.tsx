@@ -2,12 +2,13 @@
 
 import { useState, useMemo } from "react";
 import { ShoppingCart, Check } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/store/cart-store";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 
 type VariantOption = {
   facetId: string;
@@ -35,6 +36,8 @@ type VariantPickerProps = {
 };
 
 export function VariantPicker({ product, variants }: VariantPickerProps) {
+  const t = useTranslations();
+  const locale = useLocale();
   const addItem = useCartStore((s) => s.addItem);
   const [added, setAdded] = useState(false);
 
@@ -127,7 +130,7 @@ export function VariantPicker({ product, variants }: VariantPickerProps) {
     });
 
     setAdded(true);
-    toast.success(`${product.name} (${variantLabel}) added to cart`);
+    toast.success(t("product.addedToCart", { name: `${product.name} (${variantLabel})` }));
     setTimeout(() => setAdded(false), 1500);
   }
 
@@ -175,15 +178,15 @@ export function VariantPicker({ product, variants }: VariantPickerProps) {
           )}
           <Badge variant={effectiveStock > 0 ? "secondary" : "destructive"}>
             {effectiveStock > 0
-              ? `${effectiveStock} in stock`
-              : "Out of stock"}
+              ? t("product.inStock", { count: effectiveStock })
+              : t("product.outOfStock")}
           </Badge>
         </div>
       )}
 
       {!selectedVariant && Object.keys(selections).length > 0 && (
         <p className="text-sm text-muted-foreground">
-          This combination is not available. Please select different options.
+          {t("product.combinationUnavailable")}
         </p>
       )}
 
@@ -196,16 +199,16 @@ export function VariantPicker({ product, variants }: VariantPickerProps) {
         variant={added ? "secondary" : "default"}
       >
         {isOutOfStock ? (
-          "Out of Stock"
+          t("product.outOfStock")
         ) : added ? (
           <>
             <Check className="size-4" />
-            Added
+            {t("product.added")}
           </>
         ) : (
           <>
             <ShoppingCart className="size-4" />
-            Add to Cart – ${effectivePrice.toFixed(2)}
+            {t("product.addToCart")} – {formatPrice(effectivePrice, locale)}
           </>
         )}
       </Button>

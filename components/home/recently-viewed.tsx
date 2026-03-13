@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { getRecentlyViewedSlugs } from "@/lib/recently-viewed";
 import { ProductCard } from "@/components/products/product-card";
 
@@ -15,6 +16,7 @@ type Product = {
 };
 
 export function RecentlyViewed() {
+  const t = useTranslations("home");
   const [products, setProducts] = useState<Product[] | null>(null);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export function RecentlyViewed() {
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-16">
-      <h2 className="mb-8 text-2xl font-bold">Recently Viewed</h2>
+      <h2 className="mb-8 text-2xl font-bold">{t("recentlyViewed")}</h2>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {products.slice(0, 4).map((product) => (
           <ProductCard

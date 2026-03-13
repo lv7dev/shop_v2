@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Plus, Trash2, Copy, ChevronDown, Package, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { formatPrice } from "@/lib/utils";
 
 type FacetValueOption = {
   id: string;
@@ -38,6 +40,9 @@ export function VariantManager({
   onChange,
   basePrice,
 }: VariantManagerProps) {
+  const t = useTranslations("admin.variants");
+  const tc = useTranslations("admin.common");
+  const locale = useLocale();
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   function addVariant() {
@@ -113,10 +118,9 @@ export function VariantManager({
     <div className="rounded-lg border p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Variants</h2>
+          <h2 className="text-lg font-semibold">{t("title")}</h2>
           <p className="text-sm text-muted-foreground">
-            Add variants for different sizes, colors, etc. Each variant has its
-            own price, stock, and SKU.
+            {t("description")}
           </p>
         </div>
         <Button
@@ -127,17 +131,16 @@ export function VariantManager({
           className="gap-1"
         >
           <Plus className="size-4" />
-          Add Variant
+          {t("addVariant")}
         </Button>
       </div>
 
       {variants.length === 0 ? (
         <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-          No variants yet. Click &quot;Add Variant&quot; to create one.
+          {t("noVariants")}
           <br />
           <span className="text-xs">
-            When variants exist, the base product price/stock become defaults.
-            Each variant overrides them.
+            {t("noVariantsHelp")}
           </span>
         </div>
       ) : (
@@ -145,7 +148,7 @@ export function VariantManager({
           {/* Table header */}
           <div className="hidden items-center gap-3 border-b px-3 pb-2 sm:grid sm:grid-cols-[1fr_5.5rem_4.5rem_7rem_1.5rem]">
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Options
+              {tc("options")}
             </span>
             <span className="text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Price
@@ -199,7 +202,7 @@ export function VariantManager({
                           ))
                         ) : (
                           <span className="text-xs italic text-muted-foreground/60">
-                            No options
+                            {tc("noOptions")}
                           </span>
                         )}
                       </div>
@@ -207,7 +210,7 @@ export function VariantManager({
 
                     {/* Price */}
                     <span className="hidden text-right text-sm font-medium tabular-nums sm:block">
-                      ${variant.price || "0.00"}
+                      {formatPrice(Number(variant.price) || 0, locale)}
                     </span>
 
                     {/* Stock */}
@@ -239,10 +242,10 @@ export function VariantManager({
                   {/* Mobile summary */}
                   {!isExpanded && (
                     <div className="flex items-center gap-3 border-t border-dashed px-3 py-1.5 text-xs text-muted-foreground sm:hidden">
-                      <span className="font-medium">${variant.price || "0.00"}</span>
+                      <span className="font-medium">{formatPrice(Number(variant.price) || 0, locale)}</span>
                       <span className="text-muted-foreground/30">&middot;</span>
                       <span className={stockNum === 0 ? "text-destructive" : ""}>
-                        {variant.stock || "0"} in stock
+                        {variant.stock || "0"} {tc("inStock")}
                       </span>
                       {variant.sku && (
                         <>
@@ -259,7 +262,7 @@ export function VariantManager({
                       {/* Options selection */}
                       {variantFacetGroups.length > 0 && (
                         <div className="space-y-3">
-                          <Label className="text-sm font-medium">Options</Label>
+                          <Label className="text-sm font-medium">{tc("options")}</Label>
                           <div className="grid gap-3 sm:grid-cols-2">
                             {variantFacetGroups.map((group) => (
                               <div
@@ -302,17 +305,21 @@ export function VariantManager({
                       {/* Price / Stock / SKU */}
                       <div className="grid gap-4 sm:grid-cols-3">
                         <div className="space-y-1.5">
-                          <Label className="text-sm">Price *</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={variant.price}
-                            onChange={(e) =>
-                              updateVariant(index, "price", e.target.value)
-                            }
-                            placeholder="0.00"
-                          />
+                          <Label className="text-sm">Price (VND) *</Label>
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              step="1000"
+                              min="0"
+                              value={variant.price}
+                              onChange={(e) =>
+                                updateVariant(index, "price", e.target.value)
+                              }
+                              placeholder="500000"
+                              className="pr-12"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₫</span>
+                          </div>
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-sm">Stock *</Label>
@@ -349,7 +356,7 @@ export function VariantManager({
                             onClick={() => duplicateVariant(index)}
                           >
                             <Copy className="size-3" />
-                            Duplicate
+                            {tc("duplicate")}
                           </Button>
                           <Button
                             type="button"
@@ -359,7 +366,7 @@ export function VariantManager({
                             onClick={() => removeVariant(index)}
                           >
                             <Trash2 className="size-3" />
-                            Remove
+                            {tc("remove")}
                           </Button>
                         </div>
                         <Button
@@ -369,7 +376,7 @@ export function VariantManager({
                           className="h-8 text-xs text-muted-foreground"
                           onClick={() => setExpandedIndex(null)}
                         >
-                          Collapse
+                          {tc("collapse")}
                         </Button>
                       </div>
                     </div>
@@ -384,22 +391,22 @@ export function VariantManager({
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Package className="size-4" />
               <span>
-                {variants.length} variant{variants.length === 1 ? "" : "s"}
+                {t("variantCount", { count: variants.length })}
               </span>
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span>
-                Total stock:{" "}
+                {t("totalStock")}{" "}
                 <span className="font-medium text-foreground tabular-nums">
                   {variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0)}
                 </span>
               </span>
               <span>
-                Price:{" "}
+                {t("priceRange")}{" "}
                 <span className="font-medium text-foreground tabular-nums">
-                  ${Math.min(...variants.map((v) => Number(v.price) || 0)).toFixed(2)}
-                  {" – $"}
-                  {Math.max(...variants.map((v) => Number(v.price) || 0)).toFixed(2)}
+                  {formatPrice(Math.min(...variants.map((v) => Number(v.price) || 0)), locale)}
+                  {" – "}
+                  {formatPrice(Math.max(...variants.map((v) => Number(v.price) || 0)), locale)}
                 </span>
               </span>
             </div>

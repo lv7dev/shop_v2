@@ -1,7 +1,9 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
 import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { ArrowUpDown, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,13 +16,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SORT_OPTIONS } from "@/services/products";
 
+const SORT_KEY_MAP: Record<string, string> = {
+  newest: "sort.newest",
+  oldest: "sort.oldest",
+  "price-low": "sort.priceLow",
+  "price-high": "sort.priceHigh",
+  rating: "sort.rating",
+  popular: "sort.popular",
+};
+
 export function ProductSort() {
+  const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const currentSort = searchParams.get("sort") ?? "newest";
-  const currentLabel =
-    SORT_OPTIONS.find((o) => o.value === currentSort)?.label ?? "Newest";
+  const currentLabel = SORT_KEY_MAP[currentSort]
+    ? t(SORT_KEY_MAP[currentSort])
+    : t("sort.newest");
 
   function handleSelect(value: string) {
     const next = new URLSearchParams(searchParams.toString());
@@ -50,12 +63,12 @@ export function ProductSort() {
             <ArrowUpDown className="size-3.5 text-muted-foreground" />
           )}
           <span className="hidden sm:inline">{currentLabel}</span>
-          <span className="sm:hidden">Sort</span>
+          <span className="sm:hidden">{t("sort.label")}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
-          Sort by
+          {t("sort.label")}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {SORT_OPTIONS.map((opt) => (
@@ -64,7 +77,7 @@ export function ProductSort() {
             onClick={() => handleSelect(opt.value)}
             className="flex cursor-pointer items-center justify-between"
           >
-            {opt.label}
+            {SORT_KEY_MAP[opt.value] ? t(SORT_KEY_MAP[opt.value]) : opt.label}
             {currentSort === opt.value && (
               <Check className="size-4 text-primary" />
             )}

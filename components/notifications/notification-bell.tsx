@@ -1,7 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { Bell, CheckCheck, Tag, Zap, ShoppingBag, Package, Clock, DollarSign, AlertTriangle } from "lucide-react";
+import { useRouter } from "@/i18n/routing";
+import { useLocale, useTranslations } from "next-intl";
+import { Bell, CheckCheck, Tag, Zap, ShoppingBag, Package, Clock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,9 +15,11 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
 } from "@/actions/notification";
-import { relativeTime } from "@/lib/utils";
+import { relativeTime, formatPrice } from "@/lib/utils";
 
 function DiscountDetails({ data }: { data: Record<string, unknown> }) {
+  const t = useTranslations("notification");
+  const locale = useLocale();
   const scope = data.scope as string | undefined;
   const method = data.method as string | undefined;
   const productNames = data.productNames as string[] | undefined;
@@ -33,12 +36,12 @@ function DiscountDetails({ data }: { data: Record<string, unknown> }) {
           {method === "AUTO" ? (
             <>
               <Zap className="mr-0.5 size-2.5" />
-              Auto
+              {t("auto")}
             </>
           ) : (
             <>
               <Tag className="mr-0.5 size-2.5" />
-              Code
+              {t("codeMethod")}
             </>
           )}
         </Badge>
@@ -48,35 +51,34 @@ function DiscountDetails({ data }: { data: Record<string, unknown> }) {
           {scope === "ORDER" ? (
             <>
               <ShoppingBag className="mr-0.5 size-2.5" />
-              Order
+              {t("order")}
             </>
           ) : (
             <>
               <Package className="mr-0.5 size-2.5" />
               {productNames && productNames.length > 0
-                ? `${productNames.length} product${productNames.length !== 1 ? "s" : ""}`
-                : "Products"}
+                ? t("productCount", { count: productNames.length })
+                : t("products")}
             </>
           )}
         </Badge>
       )}
       {minOrder != null && minOrder > 0 && (
         <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-          <DollarSign className="mr-0.5 size-2.5" />
-          Min ${minOrder.toFixed(0)}
+          {t("minOrder", { amount: formatPrice(minOrder, locale) })}
         </Badge>
       )}
       {expiresAt && (
         <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
           <Clock className="mr-0.5 size-2.5" />
-          {new Date(expiresAt).toLocaleDateString()}
+          {new Date(expiresAt).toLocaleDateString(locale)}
         </Badge>
       )}
       {scope === "PRODUCT" && productNames && productNames.length > 0 && (
         <p className="mt-0.5 w-full text-[10px] text-muted-foreground">
           {productNames.length <= 3
             ? productNames.join(", ")
-            : `${productNames.slice(0, 2).join(", ")} +${productNames.length - 2} more`}
+            : `${productNames.slice(0, 2).join(", ")} ${t("moreProducts", { count: productNames.length - 2 })}`}
         </p>
       )}
     </div>
@@ -90,21 +92,67 @@ function NotificationIcon({ type }: { type: string }) {
   return null;
 }
 
+function useNotificationTitle(notification: NotificationItem) {
+  const t = useTranslations("notification");
+  const d = notification.data;
+  switch (notification.type) {
+    case "DISCOUNT":
+      return t("titleDiscount");
+    case "ORDER_UPDATE":
+      return d?.status === "DELIVERED" ? t("titleDelivered") : t("titleShipped");
+    case "LOW_STOCK": {
+      const name = (d?.productName as string) ?? "";
+      return d?.stock === 0
+        ? t("titleOutOfStock", { name })
+        : t("titleLowStock", { name });
+    }
+    default:
+      return notification.title;
+  }
+}
+
+function useNotificationMessage(notification: NotificationItem) {
+  const t = useTranslations("notification");
+  const d = notification.data;
+  switch (notification.type) {
+    case "ORDER_UPDATE": {
+      const orderNum = ((d?.orderNumber as string) ?? "").slice(-8).toUpperCase();
+      return d?.status === "DELIVERED"
+        ? t("msgDelivered", { orderNumber: orderNum })
+        : t("msgShipped", { orderNumber: orderNum });
+    }
+    case "LOW_STOCK": {
+      const name = (d?.productName as string) ?? "";
+      const stock = (d?.stock as number) ?? 0;
+      const threshold = (d?.threshold as number) ?? 0;
+      return stock === 0
+        ? t("msgOutOfStock", { name })
+        : t("msgLowStock", { name, stock, threshold });
+    }
+    default:
+      return notification.message ?? "";
+  }
+}
+
 function NotificationContent({ notification }: { notification: NotificationItem }) {
+  const locale = useLocale();
+  const t = useTranslations("notification");
   const isDiscount = notification.type === "DISCOUNT" && notification.data;
   const isLowStock = notification.type === "LOW_STOCK" && notification.data;
+  const title = useNotificationTitle(notification);
+  const message = useNotificationMessage(notification);
 
   return (
     <>
       <NotificationIcon type={notification.type} />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{notification.title}</p>
+        <p className="text-sm font-medium">{title}</p>
         {isDiscount ? (
           <>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {Boolean(notification.data!.code) && notification.data!.method !== "AUTO" ? (
                 <>
-                  Code:{" "}
+                  {t("code")}{" "}
                   <span className="font-mono font-semibold text-foreground">
                     {String(notification.data!.code)}
                   </span>
@@ -112,23 +160,23 @@ function NotificationContent({ notification }: { notification: NotificationItem 
                 </>
               ) : null}
               {notification.data!.type === "PERCENTAGE"
-                ? `${notification.data!.value}% off`
-                : `$${notification.data!.value} off`}
-              {notification.data!.method === "AUTO" ? " · Auto-applied at checkout" : null}
+                ? t("percentOff", { value: String(notification.data!.value) })
+                : t("fixedOff", { value: formatPrice(Number(notification.data!.value), locale) })}
+              {notification.data!.method === "AUTO" ? ` · ${t("autoApplied")}` : null}
             </p>
             <DiscountDetails data={notification.data!} />
           </>
         ) : isLowStock ? (
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {notification.message}
+            {message}
           </p>
         ) : (
           <p className="text-xs text-muted-foreground line-clamp-2">
-            {notification.message}
+            {message}
           </p>
         )}
         <p className="mt-1 text-[10px] text-muted-foreground">
-          {relativeTime(new Date(notification.createdAt))}
+          {relativeTime(new Date(notification.createdAt), locale)}
         </p>
       </div>
     </>
@@ -137,6 +185,7 @@ function NotificationContent({ notification }: { notification: NotificationItem 
 
 export function NotificationBell() {
   const router = useRouter();
+  const t = useTranslations("notification");
   const notifications = useNotificationStore((s) => s.notifications);
   const hydrated = useNotificationStore((s) => s._hydrated);
   const unreadCount = useNotificationStore((s) => s.unreadCount());
@@ -176,7 +225,7 @@ export function NotificationBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-96 p-0">
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <h3 className="text-sm font-semibold">Notifications</h3>
+          <h3 className="text-sm font-semibold">{t("title")}</h3>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
@@ -185,7 +234,7 @@ export function NotificationBell() {
               onClick={handleMarkAllRead}
             >
               <CheckCheck className="size-3" />
-              Mark all read
+              {t("markAllRead")}
             </Button>
           )}
         </div>
@@ -193,7 +242,7 @@ export function NotificationBell() {
         <div className="max-h-96 overflow-y-auto">
           {notifications.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
-              No notifications yet
+              {t("noNotifications")}
             </div>
           ) : (
             notifications.map((n) => (
