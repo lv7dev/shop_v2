@@ -327,7 +327,8 @@ describe("Order Creation", () => {
     );
 
     expect(result.success).toBe(true);
-    expect(result.order!.paymentExpiry).not.toBeNull();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((result.order as any).paymentExpiry).not.toBeNull();
   });
 
   it("does not set payment expiry for COD", async () => {
@@ -343,7 +344,8 @@ describe("Order Creation", () => {
     );
 
     expect(result.success).toBe(true);
-    expect(result.order!.paymentExpiry).toBeNull();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((result.order as any).paymentExpiry).toBeNull();
   });
 
   it("decrements stock in transaction", async () => {
@@ -395,7 +397,8 @@ describe("Order Creation", () => {
     expect(result.success).toBe(true);
     // 10% of 400000 = 40000
     expect(result.order!.discountAmount).toBe(40000);
-    expect(result.order!.discountCode).toBe("SAVE10");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((result.order as any).discountCode).toBe("SAVE10");
   });
 
   it("applies fixed discount code capped at subtotal", async () => {
@@ -684,7 +687,8 @@ describe("Order Creation", () => {
     );
 
     expect(result.success).toBe(true);
-    expect(result.order!.note).toBe("Please deliver before 5pm");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((result.order as any).note).toBe("Please deliver before 5pm");
   });
 });
 
