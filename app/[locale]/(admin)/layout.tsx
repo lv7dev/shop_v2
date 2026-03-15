@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { NotificationSync } from "@/components/notifications/notification-sync";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -67,7 +68,10 @@ export default async function AdminLayout({
             <ArrowLeft className="size-4" />
             {t("backToStore")}
           </Link>
-          <NotificationBell />
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <NotificationBell />
+          </div>
         </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>

@@ -1,3 +1,5 @@
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
+
 export default function AuthLayout({
   children,
 }: {
@@ -19,6 +21,11 @@ export default function AuthLayout({
             "linear-gradient(36deg, rgba(236, 72, 153, 0.2) 50%, rgba(168, 85, 247, 0.1) 85%, rgba(6, 182, 212, 0.2) 121%)",
         }}
       />
+
+      {/* Language switcher */}
+      <div className="absolute right-4 top-4 z-20">
+        <LanguageSwitcher />
+      </div>
 
       {/* Decorative blurred circles */}
       <div className="absolute left-10 top-10 size-32 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 opacity-70 blur-sm" />
