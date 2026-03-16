@@ -13,6 +13,7 @@ type Product = {
   images: string[];
   stock: number;
   category: { name: string; slug: string } | null;
+  hasVariants?: boolean;
 };
 
 export function RecentlyViewed() {
@@ -49,6 +50,7 @@ export function RecentlyViewed() {
             images={product.images}
             stock={product.stock}
             category={product.category}
+            hasVariants={product.hasVariants}
           />
         ))}
       </div>

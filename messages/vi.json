@@ -105,6 +105,7 @@
   },
   "product": {
     "addToCart": "Thêm vào giỏ",
+    "selectOptions": "Chọn tùy chọn",
     "added": "Đã thêm",
     "addedToCart": "Đã thêm {name} vào giỏ hàng",
     "outOfStock": "Hết hàng",

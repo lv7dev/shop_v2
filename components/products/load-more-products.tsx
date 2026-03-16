@@ -20,6 +20,7 @@ type Product = {
     type: "PERCENTAGE" | "FIXED";
     value: number;
   } | null;
+  hasVariants?: boolean;
 };
 
 type Props = {
@@ -79,6 +80,7 @@ export function LoadMoreProducts({
             category={product.category}
             priority={i < 2}
             activeDiscount={product.activeDiscount}
+            hasVariants={product.hasVariants}
           />
         ))}
       </div>

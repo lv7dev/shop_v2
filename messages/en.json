@@ -105,6 +105,7 @@
   },
   "product": {
     "addToCart": "Add to Cart",
+    "selectOptions": "Select Options",
     "added": "Added",
     "addedToCart": "{name} added to cart",
     "outOfStock": "Out of Stock",

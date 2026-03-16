@@ -335,6 +335,7 @@ export default async function ProductDetailPage({ params }: Props) {
               <VariantPicker
                 product={{
                   id: product.id,
+                  slug: product.slug,
                   name: product.name,
                   price,
                   image: product.images[0] ?? "",
@@ -391,6 +392,7 @@ export default async function ProductDetailPage({ params }: Props) {
                 <AddToCartButton
                   product={{
                     id: product.id,
+                    slug: product.slug,
                     name: product.name,
                     price,
                     image: product.images[0] ?? "",
@@ -498,6 +500,7 @@ export default async function ProductDetailPage({ params }: Props) {
                 stock={rp.stock}
                 category={rp.category}
                 activeDiscount={relatedDiscountMap.get(rp.id) ?? null}
+                hasVariants={(rp._count?.variants ?? 0) > 0}
               />
             ))}
           </div>

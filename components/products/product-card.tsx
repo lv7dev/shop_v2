@@ -9,6 +9,7 @@ import { ProductImage } from "@/components/ui/product-image";
 import { formatPrice } from "@/lib/utils";
 import { AddToCartButton } from "./add-to-cart-button";
 import { WishlistButton } from "@/components/wishlist/wishlist-button";
+import { Button } from "@/components/ui/button";
 
 type ProductCardProps = {
   id: string;
@@ -25,6 +26,7 @@ type ProductCardProps = {
     type: "PERCENTAGE" | "FIXED";
     value: number;
   } | null;
+  hasVariants?: boolean;
 };
 
 export function ProductCard({
@@ -38,6 +40,7 @@ export function ProductCard({
   priority = false,
   sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
   activeDiscount,
+  hasVariants,
 }: ProductCardProps) {
   const t = useTranslations("product");
   const locale = useLocale();
@@ -109,9 +112,18 @@ export function ProductCard({
             {t("useCode", { code: activeDiscount.code, discount: discountLabel! })}
           </div>
         )}
-        <AddToCartButton
-          product={{ id, name, price, image: images[0] ?? "", stock }}
-        />
+        {hasVariants ? (
+          <Link href={`/products/${slug}`}>
+            <Button type="button" className="w-full" variant="outline">
+              <ShoppingCart className="size-4" />
+              {t("selectOptions")}
+            </Button>
+          </Link>
+        ) : (
+          <AddToCartButton
+            product={{ id, slug, name, price, image: images[0] ?? "", stock }}
+          />
+        )}
       </CardContent>
     </Card>
   );

@@ -76,7 +76,7 @@ async function getProductsSortedByRating(
     pageIds.length > 0
       ? await db.product.findMany({
           where: { id: { in: pageIds } },
-          include: { category: true },
+          include: { category: true, _count: { select: { variants: true } } },
         })
       : [];
 
@@ -148,7 +148,7 @@ export async function getProducts({
   const [products, total] = await Promise.all([
     db.product.findMany({
       where,
-      include: { category: true },
+      include: { category: true, _count: { select: { variants: true } } },
       skip: (page - 1) * limit,
       take: limit,
       orderBy: getOrderBy(sort),
@@ -222,7 +222,7 @@ export async function getRelatedProducts(
       id: { not: productId },
       ...(categoryId && { categoryId }),
     },
-    include: { category: true },
+    include: { category: true, _count: { select: { variants: true } } },
     take: limit,
     orderBy: { createdAt: "desc" },
   });

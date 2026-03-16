@@ -23,6 +23,7 @@ export async function loadMoreProducts(params: LoadMoreParams) {
   // Products from getProducts() include { category: true } relation
   const serialized = products.map((p) => {
     const cat = (p as typeof p & { category: { name: string; slug: string } | null }).category;
+    const counts = (p as typeof p & { _count: { variants: number } })._count;
     return {
       id: p.id,
       name: p.name,
@@ -32,6 +33,7 @@ export async function loadMoreProducts(params: LoadMoreParams) {
       stock: p.stock,
       category: cat ? { name: cat.name, slug: cat.slug } : null,
       activeDiscount: discountMap.get(p.id) ?? null,
+      hasVariants: (counts?.variants ?? 0) > 0,
     };
   });
 
