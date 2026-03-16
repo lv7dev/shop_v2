@@ -165,7 +165,7 @@ export default async function ProductsPage({ params, searchParams }: Props) {
                     stock: p.stock,
                     category: cat ? { name: cat.name, slug: cat.slug } : null,
                     activeDiscount: discountMap.get(p.id) ?? null,
-                    variants: serializeVariants((p as any).variants ?? []),
+                    variants: serializeVariants(p.variants),
                   };
                 })}
                 total={total}

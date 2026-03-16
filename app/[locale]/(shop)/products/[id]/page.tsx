@@ -501,7 +501,7 @@ export default async function ProductDetailPage({ params }: Props) {
                 stock={rp.stock}
                 category={rp.category}
                 activeDiscount={relatedDiscountMap.get(rp.id) ?? null}
-                variants={serializeVariants((rp as any).variants ?? [])}
+                variants={serializeVariants(rp.variants)}
               />
             ))}
           </div>

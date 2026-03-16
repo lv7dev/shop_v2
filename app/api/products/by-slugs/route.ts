@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       images: p!.images,
       stock: p!.stock,
       category: p!.category ? { name: p!.category.name, slug: p!.category.slug } : null,
-      variants: serializeVariants((p as any).variants ?? []),
+      variants: serializeVariants(p!.variants),
     }));
 
   return NextResponse.json({ products: ordered });

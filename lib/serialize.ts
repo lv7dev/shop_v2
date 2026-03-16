@@ -1,24 +1,25 @@
 import type { CardVariant } from "@/types/product";
 
+/** Shape of a Prisma variant row with nested options/facetValue/facet includes */
+type PrismaVariantRow = {
+  id: string;
+  price: { toNumber?: () => number } | number;
+  stock: number;
+  options: {
+    facetValue: {
+      id: string;
+      value: string;
+      facet: { id: string; name: string };
+    };
+  }[];
+};
+
 /**
  * Converts Prisma variant data (with nested options.facetValue.facet)
  * into the flat CardVariant[] shape for client transport.
- *
- * Reference shape: same include used by getProductBySlug() in services/products.ts
  */
 export function serializeVariants(
-  prismaVariants: {
-    id: string;
-    price: { toNumber?: () => number } | number;
-    stock: number;
-    options: {
-      facetValue: {
-        id: string;
-        value: string;
-        facet: { id: string; name: string };
-      };
-    }[];
-  }[]
+  prismaVariants: PrismaVariantRow[]
 ): CardVariant[] {
   return prismaVariants.map((v) => ({
     id: v.id,
