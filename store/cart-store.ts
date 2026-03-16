@@ -9,6 +9,7 @@ import {
 
 export type CartItem = {
   id: string; // productId
+  slug: string;
   variantId?: string;
   name: string;
   variantLabel?: string; // e.g. "Size: M / Color: Red"
@@ -132,6 +133,8 @@ export const useCartStore = create<CartStore>()(
     }),
     {
       name: "cart-storage",
+      version: 2, // v2: added slug to CartItem
+      migrate: () => ({ items: [] }), // clear old carts without slug
       partialize: (state) => ({ items: state.items }),
       onRehydrateStorage: () => () => {
         queueMicrotask(() => {

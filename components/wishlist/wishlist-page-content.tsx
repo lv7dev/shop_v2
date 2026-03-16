@@ -25,6 +25,7 @@ export function WishlistPageContent() {
   function handleMoveToCart(item: WishlistItem) {
     addCartItem({
       id: item.productId,
+      slug: item.slug,
       name: item.name,
       price: item.price,
       image: item.image,

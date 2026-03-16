@@ -10,6 +10,7 @@ vi.mock("@/actions/cart-db", () => ({
 
 const mockItem = (overrides?: Partial<CartItem>): Omit<CartItem, "quantity"> => ({
   id: "prod-1",
+  slug: "test-product",
   name: "Test Product",
   price: 100000,
   image: "/test.jpg",

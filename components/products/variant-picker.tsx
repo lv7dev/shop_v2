@@ -28,6 +28,7 @@ type Variant = {
 type VariantPickerProps = {
   product: {
     id: string;
+    slug: string;
     name: string;
     price: number;
     image: string;
@@ -121,6 +122,7 @@ export function VariantPicker({ product, variants }: VariantPickerProps) {
 
     addItem({
       id: product.id,
+      slug: product.slug,
       variantId: selectedVariant.id,
       name: product.name,
       variantLabel,

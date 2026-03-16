@@ -10,6 +10,7 @@ import { useCartStore } from "@/store/cart-store";
 type AddToCartButtonProps = {
   product: {
     id: string;
+    slug: string;
     name: string;
     price: number;
     image: string;

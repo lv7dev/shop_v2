@@ -200,6 +200,7 @@ async function loadEnrichedCart(userId: string): Promise<EnrichedCartItem[]> {
       product: {
         select: {
           id: true,
+          slug: true,
           name: true,
           price: true,
           images: true,
@@ -237,6 +238,7 @@ async function loadEnrichedCart(userId: string): Promise<EnrichedCartItem[]> {
 
       return {
         id: item.product.id,
+        slug: item.product.slug,
         variantId: item.variantId ?? undefined,
         name: item.product.name,
         variantLabel,

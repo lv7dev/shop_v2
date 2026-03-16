@@ -98,7 +98,7 @@ export function LoginForm() {
     });
     return res.json() as Promise<{
       success: boolean;
-      items: { id: string; name: string; price: number; image: string; quantity: number; stock: number }[];
+      items: { id: string; slug: string; name: string; price: number; image: string; quantity: number; stock: number }[];
     }>;
   }
 

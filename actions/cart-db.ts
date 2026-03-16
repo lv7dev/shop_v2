@@ -7,6 +7,7 @@ import type { CartDbItemInput } from "@/types/cart";
 
 export type EnrichedCartItem = {
   id: string;
+  slug: string;
   variantId?: string;
   name: string;
   variantLabel?: string;
@@ -36,6 +37,7 @@ export async function loadCartFromDB(): Promise<{
         product: {
           select: {
             id: true,
+            slug: true,
             name: true,
             price: true,
             images: true,
@@ -73,6 +75,7 @@ export async function loadCartFromDB(): Promise<{
 
         return {
           id: item.product.id,
+          slug: item.product.slug,
           variantId: item.variantId ?? undefined,
           name: item.product.name,
           variantLabel,

@@ -35,7 +35,7 @@ export function CartItem({ item }: { item: CartItemType }) {
       <div className="flex flex-1 flex-col justify-between">
         <div>
           <Link
-            href={`/products/${item.id}`}
+            href={`/products/${item.slug}`}
             className="font-medium hover:text-primary transition-colors line-clamp-1"
           >
             {item.name}

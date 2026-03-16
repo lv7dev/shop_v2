@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
         product: {
           select: {
             id: true,
+            slug: true,
             name: true,
             price: true,
             images: true,
@@ -115,6 +116,7 @@ export async function POST(req: NextRequest) {
 
         return {
           id: item.product.id,
+          slug: item.product.slug,
           variantId: item.variantId ?? undefined,
           name: item.product.name,
           variantLabel,
