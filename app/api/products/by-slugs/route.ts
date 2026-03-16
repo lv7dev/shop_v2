@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { serializeVariants } from "@/lib/serialize";
 
 export async function GET(request: NextRequest) {
   const slugsParam = request.nextUrl.searchParams.get("slugs");
@@ -11,7 +12,20 @@ export async function GET(request: NextRequest) {
 
   const products = await db.product.findMany({
     where: { slug: { in: slugs }, isActive: true },
-    include: { category: true, _count: { select: { variants: true } } },
+    include: {
+      category: true,
+      variants: {
+        include: {
+          options: {
+            include: {
+              facetValue: {
+                include: { facet: true },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
   // Preserve the order of the input slugs
@@ -27,7 +41,7 @@ export async function GET(request: NextRequest) {
       images: p!.images,
       stock: p!.stock,
       category: p!.category ? { name: p!.category.name, slug: p!.category.slug } : null,
-      hasVariants: (p!._count?.variants ?? 0) > 0,
+      variants: serializeVariants((p as any).variants ?? []),
     }));
 
   return NextResponse.json({ products: ordered });

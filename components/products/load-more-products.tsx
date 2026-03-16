@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "./product-card";
 import { loadMoreProducts } from "@/actions/products";
+import type { CardVariant } from "@/types/product";
 
 type Product = {
   id: string;
@@ -20,7 +21,7 @@ type Product = {
     type: "PERCENTAGE" | "FIXED";
     value: number;
   } | null;
-  hasVariants?: boolean;
+  variants?: CardVariant[];
 };
 
 type Props = {
@@ -80,7 +81,7 @@ export function LoadMoreProducts({
             category={product.category}
             priority={i < 2}
             activeDiscount={product.activeDiscount}
-            hasVariants={product.hasVariants}
+            variants={product.variants}
           />
         ))}
       </div>

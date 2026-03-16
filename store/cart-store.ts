@@ -28,7 +28,7 @@ type CartStore = {
   items: CartItem[];
   _hydrated: boolean;
   _isAuthenticated: boolean;
-  addItem: (item: Omit<CartItem, "quantity">) => void;
+  addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
   removeItem: (id: string, variantId?: string) => void;
   updateQuantity: (id: string, quantity: number, variantId?: string) => void;
   clearCart: (syncToDb?: boolean) => void;
@@ -57,10 +57,12 @@ export const useCartStore = create<CartStore>()(
           );
           let newQuantity: number;
 
+          const qty = item.quantity ?? 1;
+
           if (existing) {
-            newQuantity = Math.min(existing.quantity + 1, item.stock);
+            newQuantity = Math.min(existing.quantity + qty, item.stock);
           } else {
-            newQuantity = 1;
+            newQuantity = Math.min(qty, item.stock);
           }
 
           const newItems = existing
@@ -69,7 +71,7 @@ export const useCartStore = create<CartStore>()(
                   ? { ...i, quantity: newQuantity }
                   : i
               )
-            : [...state.items, { ...item, quantity: 1 }];
+            : [...state.items, { ...item, quantity: newQuantity }];
 
           if (state._isAuthenticated) {
             syncCartItemToDB(item.id, newQuantity, item.variantId).catch(

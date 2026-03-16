@@ -10,6 +10,7 @@ import { LoadMoreProducts } from "@/components/products/load-more-products";
 import { ITEMS_PER_PAGE, PER_PAGE_OPTIONS } from "@/lib/constants";
 import { ProductSort } from "@/components/products/product-sort";
 import { Package } from "lucide-react";
+import { serializeVariants } from "@/lib/serialize";
 
 const ProductFilters = dynamic(
   () => import("@/components/products/product-filters").then((mod) => mod.ProductFilters),
@@ -155,7 +156,6 @@ export default async function ProductsPage({ params, searchParams }: Props) {
                 key={`${sort ?? "newest"}-${categorySlug}-${search}-${minPrice}-${maxPrice}-${JSON.stringify(facets)}`}
                 initialProducts={products.map((p) => {
                   const cat = (p as typeof p & { category: { name: string; slug: string } | null }).category;
-                  const counts = (p as typeof p & { _count: { variants: number } })._count;
                   return {
                     id: p.id,
                     name: p.name,
@@ -165,7 +165,7 @@ export default async function ProductsPage({ params, searchParams }: Props) {
                     stock: p.stock,
                     category: cat ? { name: cat.name, slug: cat.slug } : null,
                     activeDiscount: discountMap.get(p.id) ?? null,
-                    hasVariants: (counts?.variants ?? 0) > 0,
+                    variants: serializeVariants((p as any).variants ?? []),
                   };
                 })}
                 total={total}

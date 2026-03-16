@@ -1,0 +1,192 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import { ShoppingCart, Check } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { useCartStore } from "@/store/cart-store";
+import { cn, formatPrice } from "@/lib/utils";
+import { QuantityStepper } from "./quantity-stepper";
+import type { CardVariant } from "@/types/product";
+
+type CardVariantPickerProps = {
+  product: {
+    id: string;
+    slug: string;
+    name: string;
+    price: number;
+    image: string;
+  };
+  variants: CardVariant[];
+};
+
+export function CardVariantPicker({ product, variants }: CardVariantPickerProps) {
+  const t = useTranslations();
+  const locale = useLocale();
+  const addItem = useCartStore((s) => s.addItem);
+  const [added, setAdded] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+
+  // Extract unique facets and their values from variants
+  const facetGroups = useMemo(() => {
+    const groups = new Map<
+      string,
+      { facetId: string; facetName: string; values: { id: string; value: string }[] }
+    >();
+
+    for (const variant of variants) {
+      for (const opt of variant.options) {
+        if (!groups.has(opt.facetId)) {
+          groups.set(opt.facetId, {
+            facetId: opt.facetId,
+            facetName: opt.facetName,
+            values: [],
+          });
+        }
+        const group = groups.get(opt.facetId)!;
+        if (!group.values.find((v) => v.id === opt.facetValueId)) {
+          group.values.push({ id: opt.facetValueId, value: opt.facetValue });
+        }
+      }
+    }
+
+    return Array.from(groups.values());
+  }, [variants]);
+
+  // Pre-select first in-stock variant, or first variant if all out of stock
+  const [selections, setSelections] = useState<Record<string, string>>(() => {
+    const first = variants.find((v) => v.stock > 0) || variants[0];
+    if (!first) return {};
+    const initial: Record<string, string> = {};
+    for (const opt of first.options) {
+      initial[opt.facetId] = opt.facetValueId;
+    }
+    return initial;
+  });
+
+  function selectOption(facetId: string, facetValueId: string) {
+    setSelections((prev) => ({ ...prev, [facetId]: facetValueId }));
+    setQuantity(1);
+  }
+
+  // Find matching variant
+  const selectedVariant = useMemo(() => {
+    const selValues = new Set(Object.values(selections));
+    return variants.find((v) => {
+      const optIds = new Set(v.options.map((o) => o.facetValueId));
+      if (optIds.size !== selValues.size) return false;
+      for (const val of selValues) {
+        if (!optIds.has(val)) return false;
+      }
+      return true;
+    });
+  }, [variants, selections]);
+
+  // Determine which values are available given current selections
+  function isValueAvailable(facetId: string, facetValueId: string): boolean {
+    const otherSelections = { ...selections, [facetId]: facetValueId };
+    const otherValues = Object.entries(otherSelections);
+    return variants.some((v) => {
+      const optIds = new Set(v.options.map((o) => o.facetValueId));
+      return otherValues.every(([, val]) => optIds.has(val));
+    });
+  }
+
+  const allOutOfStock = variants.every((v) => v.stock === 0);
+  const effectivePrice = selectedVariant ? selectedVariant.price : product.price;
+  const effectiveStock = selectedVariant ? selectedVariant.stock : 0;
+  const isOutOfStock = allOutOfStock || !selectedVariant || effectiveStock === 0;
+
+  function handleAdd() {
+    if (!selectedVariant || isOutOfStock) return;
+
+    const variantLabel = selectedVariant.options
+      .map((o) => `${o.facetName}: ${o.facetValue}`)
+      .join(" / ");
+
+    addItem({
+      id: product.id,
+      slug: product.slug,
+      variantId: selectedVariant.id,
+      name: product.name,
+      variantLabel,
+      price: effectivePrice,
+      image: product.image,
+      stock: effectiveStock,
+      quantity,
+    });
+
+    setAdded(true);
+    setQuantity(1);
+    toast.success(t("product.addedToCart", { name: `${product.name} (${variantLabel})` }));
+    setTimeout(() => setAdded(false), 1500);
+  }
+
+  return (
+    <div className="space-y-2">
+      {/* Variant pills */}
+      {facetGroups.map((group) => (
+        <div key={group.facetId} className="flex flex-wrap gap-1">
+          {group.values.map((val) => {
+            const isSelected = selections[group.facetId] === val.id;
+            const available = isValueAvailable(group.facetId, val.id);
+
+            return (
+              <button
+                key={val.id}
+                type="button"
+                onClick={() => selectOption(group.facetId, val.id)}
+                disabled={!available}
+                className={cn(
+                  "rounded-md border px-2 py-1 text-xs font-medium transition-colors",
+                  isSelected
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : available
+                      ? "border-border bg-background hover:border-primary/50 hover:bg-accent"
+                      : "border-border bg-muted text-muted-foreground/50 line-through cursor-not-allowed"
+                )}
+              >
+                {val.value}
+              </button>
+            );
+          })}
+        </div>
+      ))}
+
+      {/* Quantity stepper — only show when a valid in-stock variant is selected */}
+      {!isOutOfStock && (
+        <QuantityStepper
+          value={quantity}
+          max={effectiveStock}
+          onChange={setQuantity}
+          size="sm"
+        />
+      )}
+
+      {/* Add to cart button */}
+      <Button
+        type="button"
+        className="w-full"
+        size="sm"
+        onClick={handleAdd}
+        disabled={isOutOfStock}
+        variant={added ? "secondary" : "default"}
+      >
+        {isOutOfStock ? (
+          t("product.outOfStock")
+        ) : added ? (
+          <>
+            <Check className="size-3" />
+            {t("product.added")}
+          </>
+        ) : (
+          <>
+            <ShoppingCart className="size-3" />
+            {t("product.addToCart")} – {formatPrice(effectivePrice, locale)}
+          </>
+        )}
+      </Button>
+    </div>
+  );
+}

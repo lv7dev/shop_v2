@@ -12,6 +12,22 @@ export const SORT_OPTIONS = [
 
 export type SortOption = (typeof SORT_OPTIONS)[number]["value"];
 
+/** Shared include for listing queries — full variant data with options/facets */
+const listingInclude = {
+  category: true,
+  variants: {
+    include: {
+      options: {
+        include: {
+          facetValue: {
+            include: { facet: true },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
 function getOrderBy(sort?: string): Prisma.ProductOrderByWithRelationInput {
   switch (sort) {
     case "oldest":
@@ -76,7 +92,7 @@ async function getProductsSortedByRating(
     pageIds.length > 0
       ? await db.product.findMany({
           where: { id: { in: pageIds } },
-          include: { category: true, _count: { select: { variants: true } } },
+          include: listingInclude,
         })
       : [];
 
@@ -148,7 +164,7 @@ export async function getProducts({
   const [products, total] = await Promise.all([
     db.product.findMany({
       where,
-      include: { category: true, _count: { select: { variants: true } } },
+      include: listingInclude,
       skip: (page - 1) * limit,
       take: limit,
       orderBy: getOrderBy(sort),
@@ -222,7 +238,7 @@ export async function getRelatedProducts(
       id: { not: productId },
       ...(categoryId && { categoryId }),
     },
-    include: { category: true, _count: { select: { variants: true } } },
+    include: listingInclude,
     take: limit,
     orderBy: { createdAt: "desc" },
   });

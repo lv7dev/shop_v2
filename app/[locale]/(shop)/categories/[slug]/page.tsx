@@ -9,6 +9,7 @@ import { ProductCard } from "@/components/products/product-card";
 import { Pagination } from "@/components/products/pagination";
 import { Badge } from "@/components/ui/badge";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
+import { serializeVariants } from "@/lib/serialize";
 
 type Props = {
   params: Promise<{ slug: string; locale: string }>;
@@ -151,7 +152,7 @@ export default async function CategoryDetailPage({
                 sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 priority={i < 4}
                 activeDiscount={discountMap.get(product.id) ?? null}
-                hasVariants={(product._count?.variants ?? 0) > 0}
+                variants={serializeVariants((product as any).variants ?? [])}
               />
             ))}
           </div>

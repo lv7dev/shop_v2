@@ -75,6 +75,33 @@ describe("Cart Store", () => {
       useCartStore.getState().addItem(mockItem());
       expect(syncCartItemToDB).not.toHaveBeenCalled();
     });
+
+    it("adds a new item with custom quantity", () => {
+      useCartStore.getState().addItem({ ...mockItem(), quantity: 3 });
+      const items = useCartStore.getState().items;
+      expect(items).toHaveLength(1);
+      expect(items[0].quantity).toBe(3);
+    });
+
+    it("increments by custom quantity for existing item", () => {
+      useCartStore.getState().addItem(mockItem());
+      useCartStore.getState().addItem({ ...mockItem(), quantity: 4 });
+      const items = useCartStore.getState().items;
+      expect(items).toHaveLength(1);
+      expect(items[0].quantity).toBe(5);
+    });
+
+    it("caps custom quantity at stock limit for new item", () => {
+      useCartStore.getState().addItem({ ...mockItem({ stock: 3 }), quantity: 10 });
+      expect(useCartStore.getState().items[0].quantity).toBe(3);
+    });
+
+    it("caps custom quantity increment at stock limit", () => {
+      const item = mockItem({ stock: 5 });
+      useCartStore.getState().addItem(item);
+      useCartStore.getState().addItem({ ...item, quantity: 10 });
+      expect(useCartStore.getState().items[0].quantity).toBe(5);
+    });
   });
 
   describe("removeItem", () => {

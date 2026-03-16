@@ -38,3 +38,17 @@ export type Review = {
   productId: string;
   createdAt: Date;
 };
+
+export type CardVariantOption = {
+  facetId: string;
+  facetName: string;
+  facetValueId: string;
+  facetValue: string;
+};
+
+export type CardVariant = {
+  id: string;
+  price: number;
+  stock: number;
+  options: CardVariantOption[];
+};

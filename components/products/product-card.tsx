@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { ProductImage } from "@/components/ui/product-image";
 import { formatPrice } from "@/lib/utils";
 import { AddToCartButton } from "./add-to-cart-button";
+import { CardVariantPicker } from "./card-variant-picker";
 import { WishlistButton } from "@/components/wishlist/wishlist-button";
-import { Button } from "@/components/ui/button";
+import type { CardVariant } from "@/types/product";
 
 type ProductCardProps = {
   id: string;
@@ -26,7 +27,7 @@ type ProductCardProps = {
     type: "PERCENTAGE" | "FIXED";
     value: number;
   } | null;
-  hasVariants?: boolean;
+  variants?: CardVariant[];
 };
 
 export function ProductCard({
@@ -40,7 +41,7 @@ export function ProductCard({
   priority = false,
   sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
   activeDiscount,
-  hasVariants,
+  variants,
 }: ProductCardProps) {
   const t = useTranslations("product");
   const locale = useLocale();
@@ -49,6 +50,11 @@ export function ProductCard({
       ? `${activeDiscount.value}% ${t("off")}`
       : `${formatPrice(activeDiscount.value, locale)} ${t("off")}`
     : null;
+
+  const hasVariants = variants && variants.length > 0;
+  const isOutOfStock = hasVariants
+    ? variants.reduce((sum, v) => sum + v.stock, 0) === 0
+    : stock === 0;
 
   return (
     <Card className="group overflow-hidden py-0 transition-shadow hover:shadow-md">
@@ -74,7 +80,7 @@ export function ProductCard({
               {discountLabel}
             </Badge>
           )}
-          {stock === 0 && (
+          {isOutOfStock && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50">
               <Badge variant="secondary" className="text-sm">
                 {t("outOfStock")}
@@ -104,7 +110,20 @@ export function ProductCard({
           </h3>
         </Link>
         <div className="flex items-center gap-2">
-          <span className="text-lg font-bold">{formatPrice(price, locale)}</span>
+          {hasVariants ? (() => {
+            const prices = variants.map((v) => v.price);
+            const min = Math.min(...prices);
+            const max = Math.max(...prices);
+            return (
+              <span className="text-lg font-bold">
+                {min === max
+                  ? formatPrice(min, locale)
+                  : `${formatPrice(min, locale)} – ${formatPrice(max, locale)}`}
+              </span>
+            );
+          })() : (
+            <span className="text-lg font-bold">{formatPrice(price, locale)}</span>
+          )}
         </div>
         {activeDiscount && (
           <div className="flex items-center gap-1.5 rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 dark:bg-green-950/30 dark:text-green-400">
@@ -113,12 +132,10 @@ export function ProductCard({
           </div>
         )}
         {hasVariants ? (
-          <Link href={`/products/${slug}`}>
-            <Button type="button" className="w-full" variant="outline">
-              <ShoppingCart className="size-4" />
-              {t("selectOptions")}
-            </Button>
-          </Link>
+          <CardVariantPicker
+            product={{ id, slug, name, price, image: images[0] ?? "" }}
+            variants={variants}
+          />
         ) : (
           <AddToCartButton
             product={{ id, slug, name, price, image: images[0] ?? "", stock }}
