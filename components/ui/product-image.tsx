@@ -28,5 +28,12 @@ export function ProductImage({
     );
   }
 
-  return <Image alt={alt} {...props} onError={() => setHasError(true)} />;
+  return (
+    <Image
+      alt={alt}
+      {...props}
+      fetchPriority={props.priority ? "high" : undefined}
+      onError={() => setHasError(true)}
+    />
+  );
 }

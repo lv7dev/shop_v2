@@ -41,7 +41,7 @@ export function ProductCard({
   stock,
   category,
   priority = false,
-  sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
+  sizes = "(max-width: 639px) calc(100vw - 2rem), (max-width: 1023px) calc(50vw - 3rem), 320px",
   activeDiscount,
   variants,
   facets,
@@ -63,7 +63,7 @@ export function ProductCard({
     : stock === 0;
 
   return (
-    <Card className="group overflow-hidden py-0 transition-shadow hover:shadow-md">
+    <Card className="group overflow-hidden py-0 hover:shadow-md">
       <Link href={`/products/${slug}`} className="block">
         <div className="relative aspect-square overflow-hidden bg-muted">
           {images[0] ? (
@@ -105,13 +105,13 @@ export function ProductCard({
         {category && (
           <Link
             href={`/products?category=${category.slug}`}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs text-muted-foreground hover:text-foreground"
           >
             {category.name}
           </Link>
         )}
         <Link href={`/products/${slug}`} className="block">
-          <h3 className="font-medium leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+          <h3 className="font-medium leading-tight line-clamp-2 group-hover:text-primary">
             {name}
           </h3>
         </Link>

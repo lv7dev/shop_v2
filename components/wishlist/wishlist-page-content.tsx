@@ -88,7 +88,7 @@ export function WishlistPageContent() {
           {items.map((item) => (
             <Card
               key={item.productId}
-              className="group overflow-hidden py-0 transition-shadow hover:shadow-md"
+              className="group overflow-hidden py-0 hover:shadow-md"
             >
               <Link href={`/products/${item.slug}`} className="block">
                 <div className="relative aspect-square overflow-hidden bg-muted">
@@ -97,7 +97,7 @@ export function WishlistPageContent() {
                       src={item.image}
                       alt={item.name}
                       fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      sizes="(max-width: 639px) calc(100vw - 2rem), (max-width: 1023px) calc(50vw - 3rem), 320px"
                       className="object-cover transition-transform group-hover:scale-105"
                     />
                   ) : (

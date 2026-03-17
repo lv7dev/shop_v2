@@ -500,6 +500,7 @@ export default async function ProductDetailPage({ params }: Props) {
                 images={rp.images}
                 stock={rp.stock}
                 category={rp.category}
+                sizes="(max-width: 639px) calc(100vw - 2rem), (max-width: 767px) calc(50vw - 2rem), (max-width: 1023px) calc(33vw - 2rem), 25vw"
                 activeDiscount={relatedDiscountMap.get(rp.id) ?? null}
                 variants={serializeVariants(rp.variants)}
                 facets={serializeFacets(rp.facetValues)}
