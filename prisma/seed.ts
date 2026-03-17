@@ -363,7 +363,7 @@ async function main() {
       description: "Flowy summer dress with floral print, perfect for warm weather occasions.",
       price: 1125000,
       sku: "SD-001",
-      stock: 45,
+      stock: 0,
       images: [
         "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600&h=600&fit=crop",
       ],
@@ -635,6 +635,33 @@ async function main() {
     });
   }
 
+  // ── Variants for Summer Dress ──────────────────
+  // Size S / M / L × Red
+
+  const dressVariantCombos = [
+    { size: sizeS, color: colorRed, sku: "SD-S-RED", price: 1125000, stock: 15 },
+    { size: sizeM, color: colorRed, sku: "SD-M-RED", price: 1125000, stock: 20 },
+    { size: sizeL, color: colorRed, sku: "SD-L-RED", price: 1175000, stock: 10 },
+  ];
+
+  for (const combo of dressVariantCombos) {
+    const variant = await prisma.productVariant.create({
+      data: {
+        productId: dress.id,
+        sku: combo.sku,
+        price: combo.price,
+        stock: combo.stock,
+      },
+    });
+
+    await prisma.variantFacetValue.createMany({
+      data: [
+        { variantId: variant.id, facetValueId: combo.size.id },
+        { variantId: variant.id, facetValueId: combo.color.id },
+      ],
+    });
+  }
+
   // ── Reviews ────────────────────────────────────
 
   await prisma.review.createMany({
@@ -656,7 +683,7 @@ async function main() {
 
   console.log("Seed completed successfully");
   console.log(
-    `Created: 3 users, 8 categories, 3 facets, 13 facet values, 20 products, ${variantCombos.length} variants, 10 reviews`
+    `Created: 3 users, 8 categories, 3 facets, 13 facet values, 20 products, ${variantCombos.length + dressVariantCombos.length} variants, 10 reviews`
   );
 }
 

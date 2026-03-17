@@ -15,6 +15,13 @@ export type SortOption = (typeof SORT_OPTIONS)[number]["value"];
 /** Shared include for listing queries — full variant data with options/facets */
 const listingInclude = {
   category: true,
+  facetValues: {
+    include: {
+      facetValue: {
+        include: { facet: true },
+      },
+    },
+  },
   variants: {
     include: {
       options: {
@@ -148,9 +155,24 @@ export async function getProducts({
   if (minPrice !== undefined) priceFilter.gte = minPrice;
   if (maxPrice !== undefined) priceFilter.lte = maxPrice;
 
+  // Include products from child categories when filtering by a parent category
+  let categoryFilter: Prisma.ProductWhereInput | undefined;
+  if (categorySlug) {
+    const children = await db.category.findMany({
+      where: { parent: { slug: categorySlug } },
+      select: { slug: true },
+    });
+    if (children.length > 0) {
+      const slugs = [categorySlug, ...children.map((c) => c.slug)];
+      categoryFilter = { category: { slug: { in: slugs } } };
+    } else {
+      categoryFilter = { category: { slug: categorySlug } };
+    }
+  }
+
   const where: Prisma.ProductWhereInput = {
     isActive: true,
-    ...(categorySlug && { category: { slug: categorySlug } }),
+    ...categoryFilter,
     ...(search && { name: { contains: search, mode: "insensitive" as const } }),
     ...(Object.keys(priceFilter).length > 0 && { price: priceFilter }),
     ...(facetConditions.length > 0 && { AND: facetConditions }),

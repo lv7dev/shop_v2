@@ -52,3 +52,8 @@ export type CardVariant = {
   stock: number;
   options: CardVariantOption[];
 };
+
+export type CardFacet = {
+  facetName: string;
+  values: string[];
+};

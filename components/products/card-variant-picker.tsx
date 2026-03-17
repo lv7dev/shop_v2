@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ShoppingCart, Check } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -19,9 +19,10 @@ type CardVariantPickerProps = {
     image: string;
   };
   variants: CardVariant[];
+  onPriceChange?: (price: number | null) => void;
 };
 
-export function CardVariantPicker({ product, variants }: CardVariantPickerProps) {
+export function CardVariantPicker({ product, variants, onPriceChange }: CardVariantPickerProps) {
   const t = useTranslations();
   const locale = useLocale();
   const addItem = useCartStore((s) => s.addItem);
@@ -82,6 +83,11 @@ export function CardVariantPicker({ product, variants }: CardVariantPickerProps)
       return true;
     });
   }, [variants, selections]);
+
+  // Notify parent of selected variant price
+  useEffect(() => {
+    onPriceChange?.(selectedVariant ? selectedVariant.price : null);
+  }, [selectedVariant, onPriceChange]);
 
   // Determine which values are available given current selections
   function isValueAvailable(facetId: string, facetValueId: string): boolean {
@@ -183,7 +189,7 @@ export function CardVariantPicker({ product, variants }: CardVariantPickerProps)
         ) : (
           <>
             <ShoppingCart className="size-3" />
-            {t("product.addToCart")} – {formatPrice(effectivePrice, locale)}
+            {t("product.addToCart")}
           </>
         )}
       </Button>

@@ -14,7 +14,7 @@ import { TrackRecentlyViewed } from "@/components/products/track-recently-viewed
 import { WishlistButton } from "@/components/wishlist/wishlist-button";
 import { getBaseUrl } from "@/lib/seo";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { serializeVariants } from "@/lib/serialize";
+import { serializeVariants, serializeFacets } from "@/lib/serialize";
 
 type Props = {
   params: Promise<{ id: string; locale: string }>;
@@ -502,6 +502,7 @@ export default async function ProductDetailPage({ params }: Props) {
                 category={rp.category}
                 activeDiscount={relatedDiscountMap.get(rp.id) ?? null}
                 variants={serializeVariants(rp.variants)}
+                facets={serializeFacets(rp.facetValues)}
               />
             ))}
           </div>

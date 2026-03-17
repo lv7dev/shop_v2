@@ -1,4 +1,4 @@
-import type { CardVariant } from "@/types/product";
+import type { CardVariant, CardFacet } from "@/types/product";
 
 /** Shape of a Prisma variant row with nested options/facetValue/facet includes */
 type PrismaVariantRow = {
@@ -31,5 +31,37 @@ export function serializeVariants(
       facetValueId: o.facetValue.id,
       facetValue: o.facetValue.value,
     })),
+  }));
+}
+
+/** Shape of a Prisma ProductFacetValue row with nested facetValue/facet */
+type PrismaProductFacetValueRow = {
+  facetValue: {
+    value: string;
+    facet: { name: string };
+  };
+};
+
+/**
+ * Converts Prisma ProductFacetValue data into CardFacet[] grouped by facet name.
+ */
+export function serializeFacets(
+  prismaFacetValues?: PrismaProductFacetValueRow[]
+): CardFacet[] {
+  if (!prismaFacetValues || prismaFacetValues.length === 0) return [];
+
+  const groups = new Map<string, string[]>();
+  for (const pfv of prismaFacetValues) {
+    const name = pfv.facetValue.facet.name;
+    if (!groups.has(name)) groups.set(name, []);
+    const values = groups.get(name)!;
+    if (!values.includes(pfv.facetValue.value)) {
+      values.push(pfv.facetValue.value);
+    }
+  }
+
+  return Array.from(groups.entries()).map(([facetName, values]) => ({
+    facetName,
+    values,
   }));
 }

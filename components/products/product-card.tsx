@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { ShoppingCart, Tag } from "lucide-react";
@@ -10,7 +11,7 @@ import { formatPrice } from "@/lib/utils";
 import { AddToCartButton } from "./add-to-cart-button";
 import { CardVariantPicker } from "./card-variant-picker";
 import { WishlistButton } from "@/components/wishlist/wishlist-button";
-import type { CardVariant } from "@/types/product";
+import type { CardVariant, CardFacet } from "@/types/product";
 
 type ProductCardProps = {
   id: string;
@@ -28,6 +29,7 @@ type ProductCardProps = {
     value: number;
   } | null;
   variants?: CardVariant[];
+  facets?: CardFacet[];
 };
 
 export function ProductCard({
@@ -42,6 +44,7 @@ export function ProductCard({
   sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
   activeDiscount,
   variants,
+  facets,
 }: ProductCardProps) {
   const t = useTranslations("product");
   const locale = useLocale();
@@ -50,6 +53,9 @@ export function ProductCard({
       ? `${activeDiscount.value}% ${t("off")}`
       : `${formatPrice(activeDiscount.value, locale)} ${t("off")}`
     : null;
+
+  const [selectedVariantPrice, setSelectedVariantPrice] = useState<number | null>(null);
+  const handlePriceChange = useCallback((p: number | null) => setSelectedVariantPrice(p), []);
 
   const hasVariants = variants && variants.length > 0;
   const isOutOfStock = hasVariants
@@ -111,6 +117,13 @@ export function ProductCard({
         </Link>
         <div className="flex items-center gap-2">
           {hasVariants ? (() => {
+            if (selectedVariantPrice !== null) {
+              return (
+                <span className="text-lg font-bold">
+                  {formatPrice(selectedVariantPrice, locale)}
+                </span>
+              );
+            }
             const prices = variants.map((v) => v.price);
             const min = Math.min(...prices);
             const max = Math.max(...prices);
@@ -131,10 +144,26 @@ export function ProductCard({
             {t("useCode", { code: activeDiscount.code, discount: discountLabel! })}
           </div>
         )}
+        {!hasVariants && facets && facets.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {facets.map((facet) =>
+              facet.values.map((value) => (
+                <Badge
+                  key={`${facet.facetName}-${value}`}
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground"
+                >
+                  {value}
+                </Badge>
+              ))
+            )}
+          </div>
+        )}
         {hasVariants ? (
           <CardVariantPicker
             product={{ id, slug, name, price, image: images[0] ?? "" }}
             variants={variants}
+            onPriceChange={handlePriceChange}
           />
         ) : (
           <AddToCartButton

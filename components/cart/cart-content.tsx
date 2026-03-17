@@ -61,7 +61,7 @@ export function CartContent() {
         </div>
 
         {items.map((item) => (
-          <CartItem key={item.id} item={item} />
+          <CartItem key={item.variantId ? `${item.id}::${item.variantId}` : item.id} item={item} />
         ))}
 
         <Button variant="outline" asChild>

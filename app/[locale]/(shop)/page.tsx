@@ -11,7 +11,7 @@ import { APP_NAME } from "@/lib/constants";
 import { buildPageMetadata } from "@/lib/seo";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { formatPrice } from "@/lib/utils";
-import { serializeVariants } from "@/lib/serialize";
+import { serializeVariants, serializeFacets } from "@/lib/serialize";
 
 export const metadata: Metadata = buildPageMetadata({
   title: `${APP_NAME} — Discover Quality Products`,
@@ -120,6 +120,7 @@ export default async function HomePage({
                   priority={i < 4}
                   activeDiscount={discountMap.get(product.id) ?? null}
                   variants={serializeVariants(product.variants)}
+                  facets={serializeFacets(product.facetValues)}
                 />
               ))}
             </div>

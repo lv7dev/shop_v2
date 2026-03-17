@@ -9,7 +9,7 @@ import { ProductCard } from "@/components/products/product-card";
 import { Pagination } from "@/components/products/pagination";
 import { Badge } from "@/components/ui/badge";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
-import { serializeVariants } from "@/lib/serialize";
+import { serializeVariants, serializeFacets } from "@/lib/serialize";
 
 type Props = {
   params: Promise<{ slug: string; locale: string }>;
@@ -153,6 +153,7 @@ export default async function CategoryDetailPage({
                 priority={i < 4}
                 activeDiscount={discountMap.get(product.id) ?? null}
                 variants={serializeVariants(product.variants)}
+                facets={serializeFacets(product.facetValues)}
               />
             ))}
           </div>

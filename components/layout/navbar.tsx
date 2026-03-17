@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Link } from "@/i18n/routing";
+import { Link, usePathname } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import {
   ShoppingCart,
@@ -51,6 +51,7 @@ export function Navbar({ user }: NavbarProps) {
   const wishlistHydrated = useWishlistStore((s) => s._hydrated);
   const wishlistCount = useWishlistStore((s) => s.items.length);
   const clearWishlist = useWishlistStore((s) => s.clearWishlist);
+  const pathname = usePathname();
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   function handleLogout() {
@@ -73,15 +74,23 @@ export function Navbar({ user }: NavbarProps) {
             { label: t("common.home"), href: "/" as const },
             { label: t("common.products"), href: "/products" as const },
             { label: t("common.categories"), href: "/categories" as const },
-          ].map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {link.label}
-            </Link>
-          ))}
+          ].map((link) => {
+            const isActive =
+              link.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`text-sm font-medium transition-colors hover:text-foreground ${
+                  isActive ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Actions */}

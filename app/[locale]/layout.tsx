@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale, getMessages } from "next-intl/server";
 import { NextIntlClientProvider } from "next-intl";
-import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { NavigationProgress } from "@/components/layout/navigation-progress";
 import { routing } from "@/i18n/routing";
@@ -12,17 +11,6 @@ import { getBaseUrl } from "@/lib/seo";
 import { getExchangeRate } from "@/actions/settings";
 import { setExchangeRate } from "@/lib/utils";
 import { ExchangeRateInit } from "@/components/exchange-rate-init";
-import "@/app/globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 type Props = {
   children: React.ReactNode;
@@ -82,32 +70,26 @@ export default async function LocaleLayout({ children, params }: Props) {
   setExchangeRate(exchangeRate);
 
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              name: APP_NAME,
-              url: getBaseUrl(),
-            }),
-          }}
-        />
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ExchangeRateInit rate={exchangeRate} />
-        <NextIntlClientProvider messages={messages}>
-          <Suspense>
-            <NavigationProgress />
-          </Suspense>
-          {children}
-          <Toaster />
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: APP_NAME,
+            url: getBaseUrl(),
+          }),
+        }}
+      />
+      <ExchangeRateInit rate={exchangeRate} />
+      <NextIntlClientProvider messages={messages}>
+        <Suspense>
+          <NavigationProgress />
+        </Suspense>
+        {children}
+        <Toaster />
+      </NextIntlClientProvider>
+    </>
   );
 }

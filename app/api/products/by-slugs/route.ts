@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { serializeVariants } from "@/lib/serialize";
+import { serializeVariants, serializeFacets } from "@/lib/serialize";
 
 export async function GET(request: NextRequest) {
   const slugsParam = request.nextUrl.searchParams.get("slugs");
@@ -14,6 +14,13 @@ export async function GET(request: NextRequest) {
     where: { slug: { in: slugs }, isActive: true },
     include: {
       category: true,
+      facetValues: {
+        include: {
+          facetValue: {
+            include: { facet: true },
+          },
+        },
+      },
       variants: {
         include: {
           options: {
@@ -42,6 +49,7 @@ export async function GET(request: NextRequest) {
       stock: p!.stock,
       category: p!.category ? { name: p!.category.name, slug: p!.category.slug } : null,
       variants: serializeVariants(p!.variants),
+      facets: serializeFacets(p!.facetValues),
     }));
 
   return NextResponse.json({ products: ordered });

@@ -5,6 +5,7 @@ import { Link } from "@/i18n/routing";
 import { useLocale, useTranslations } from "next-intl";
 import { Minus, Plus, Trash2, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useCartStore, type CartItem as CartItemType } from "@/store/cart-store";
 import { formatPrice } from "@/lib/utils";
 
@@ -41,9 +42,17 @@ export function CartItem({ item }: { item: CartItemType }) {
             {item.name}
           </Link>
           {item.variantLabel && (
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {item.variantLabel}
-            </p>
+            <div className="flex flex-wrap gap-1 mt-0.5">
+              {item.variantLabel.split(" / ").map((part) => (
+                <Badge
+                  key={part}
+                  variant="secondary"
+                  className="text-[10px] px-1.5 py-0 font-normal"
+                >
+                  {part}
+                </Badge>
+              ))}
+            </div>
           )}
           <p className="text-sm text-muted-foreground">
             {formatPrice(item.price, locale)} {t("common.each")}

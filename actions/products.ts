@@ -1,7 +1,7 @@
 "use server";
 
 import { getProducts, getActiveDiscountsForProducts } from "@/services/products";
-import { serializeVariants } from "@/lib/serialize";
+import { serializeVariants, serializeFacets } from "@/lib/serialize";
 
 type LoadMoreParams = {
   page: number;
@@ -34,6 +34,7 @@ export async function loadMoreProducts(params: LoadMoreParams) {
       category: cat ? { name: cat.name, slug: cat.slug } : null,
       activeDiscount: discountMap.get(p.id) ?? null,
       variants: serializeVariants(p.variants),
+      facets: serializeFacets(p.facetValues),
     };
   });
 

@@ -10,7 +10,7 @@ import { LoadMoreProducts } from "@/components/products/load-more-products";
 import { ITEMS_PER_PAGE, PER_PAGE_OPTIONS } from "@/lib/constants";
 import { ProductSort } from "@/components/products/product-sort";
 import { Package } from "lucide-react";
-import { serializeVariants } from "@/lib/serialize";
+import { serializeVariants, serializeFacets } from "@/lib/serialize";
 
 const ProductFilters = dynamic(
   () => import("@/components/products/product-filters").then((mod) => mod.ProductFilters),
@@ -166,6 +166,7 @@ export default async function ProductsPage({ params, searchParams }: Props) {
                     category: cat ? { name: cat.name, slug: cat.slug } : null,
                     activeDiscount: discountMap.get(p.id) ?? null,
                     variants: serializeVariants(p.variants),
+                    facets: serializeFacets(p.facetValues),
                   };
                 })}
                 total={total}

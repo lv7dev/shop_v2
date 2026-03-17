@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Link, useRouter } from "@/i18n/routing";
+import { Link, usePathname, useRouter } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import {
   ShoppingCart,
@@ -58,6 +58,7 @@ export function MobileMenu({
   onLogout,
 }: MobileMenuProps) {
   const t = useTranslations();
+  const pathname = usePathname();
   const router = useRouter();
   const unreadCount = useNotificationStore((s) => s.unreadCount());
   const notifHydrated = useNotificationStore((s) => s._hydrated);
@@ -110,17 +111,25 @@ export function MobileMenu({
           <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t("nav.navigate")}
           </p>
-          {NAV_ITEMS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={onClose}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
-            >
-              <link.icon className="size-4 text-muted-foreground" />
-              {t(link.key)}
-            </Link>
-          ))}
+          {NAV_ITEMS.map((link) => {
+            const isActive =
+              link.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={onClose}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent ${
+                  isActive ? "bg-accent text-foreground" : ""
+                }`}
+              >
+                <link.icon className={`size-4 ${isActive ? "text-foreground" : "text-muted-foreground"}`} />
+                {t(link.key)}
+              </Link>
+            );
+          })}
           <Link
             href="/cart"
             onClick={onClose}

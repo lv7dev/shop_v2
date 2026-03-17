@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { getRecentlyViewedSlugs } from "@/lib/recently-viewed";
 import { ProductCard } from "@/components/products/product-card";
-import type { CardVariant } from "@/types/product";
+import type { CardVariant, CardFacet } from "@/types/product";
 
 type Product = {
   id: string;
@@ -15,6 +15,7 @@ type Product = {
   stock: number;
   category: { name: string; slug: string } | null;
   variants?: CardVariant[];
+  facets?: CardFacet[];
 };
 
 export function RecentlyViewed() {
@@ -52,6 +53,7 @@ export function RecentlyViewed() {
             stock={product.stock}
             category={product.category}
             variants={product.variants}
+            facets={product.facets}
           />
         ))}
       </div>
