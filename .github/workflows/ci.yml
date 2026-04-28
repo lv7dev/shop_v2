@@ -24,6 +24,9 @@ jobs:
       - run: npm ci
 
       - run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost/db
+          DIRECT_URL: postgresql://user:pass@localhost/db
 
       - run: npm run lint
 
@@ -47,6 +50,7 @@ jobs:
       - run: npx prisma db push
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
   build:
     name: Build
@@ -65,4 +69,5 @@ jobs:
       - run: npm run build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
