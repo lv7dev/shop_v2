@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { getBaseUrl } from "@/lib/seo";
 import { locales } from "@/i18n/config";
 
+export const dynamic = "force-dynamic";
+
 function alternates(path: string) {
   const baseUrl = getBaseUrl();
   return {
